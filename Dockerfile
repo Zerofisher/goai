@@ -17,7 +17,7 @@ COPY . .
 
 # Build the binary
 ARG VERSION=dev
-RUN CGO_ENABLED=1 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-s -w -X main.version=${VERSION}" \
     -o goai ./cmd/goai
 
