@@ -77,21 +77,21 @@ Provide a comprehensive technical analysis following the structured approach abo
 				}(),
 				func() string {
 					if len(req.Requirements) > 0 {
-						result := ""
+						var result strings.Builder
 						for _, r := range req.Requirements {
-							result += "- " + r + "\n"
+							result.WriteString("- " + r + "\n")
 						}
-						return result
+						return result.String()
 					}
 					return "- No specific requirements"
 				}(),
 				func() string {
 					if len(req.Constraints) > 0 {
-						result := ""
+						var result strings.Builder
 						for _, c := range req.Constraints {
-							result += "- " + c + "\n"
+							result.WriteString("- " + c + "\n")
 						}
-						return result
+						return result.String()
 					}
 					return "- No specific constraints"
 				}(),

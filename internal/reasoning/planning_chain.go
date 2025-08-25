@@ -119,21 +119,21 @@ Create a comprehensive implementation plan that addresses all aspects of the ana
 				string(analysis.Complexity),
 				func() string {
 					if len(analysis.RiskFactors) > 0 {
-						result := ""
+						var result strings.Builder
 						for _, rf := range analysis.RiskFactors {
-							result += fmt.Sprintf("- %s: %s (%s)\n  Mitigation: %s\n", rf.Type, rf.Description, rf.Severity, rf.Mitigation)
+							result.WriteString(fmt.Sprintf("- %s: %s (%s)\n  Mitigation: %s\n", rf.Type, rf.Description, rf.Severity, rf.Mitigation))
 						}
-						return result
+						return result.String()
 					}
 					return "- No specific risk factors identified"
 				}(),
 				func() string {
 					if len(analysis.Recommendations) > 0 {
-						result := ""
+						var result strings.Builder
 						for _, rec := range analysis.Recommendations {
-							result += fmt.Sprintf("- %s: %s (Priority: %s)\n", rec.Category, rec.Description, rec.Priority)
+							result.WriteString(fmt.Sprintf("- %s: %s (Priority: %s)\n", rec.Category, rec.Description, rec.Priority))
 						}
-						return result
+						return result.String()
 					}
 					return "- No specific recommendations"
 				}(),

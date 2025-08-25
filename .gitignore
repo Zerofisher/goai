@@ -4,7 +4,10 @@
 *.dll
 *.so
 *.dylib
-goai
+
+# Binary output (not the cmd/goai directory)
+/goai
+goai.exe
 
 # Test binary, built with `go test -c`
 *.test

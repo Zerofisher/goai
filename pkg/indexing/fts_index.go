@@ -126,7 +126,7 @@ func (f *FTSIndex) Update(ctx context.Context, tag *IndexTag, changes *IndexChan
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	
 	// Process added files
 	for _, filePath := range changes.Added {
@@ -157,7 +157,7 @@ func (f *FTSIndex) Remove(ctx context.Context, tag *IndexTag, files []string) er
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	
 	for _, filePath := range files {
 		if filePath == "*" {

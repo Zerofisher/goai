@@ -145,8 +145,8 @@ Description: Test project for context building
 	}
 
 	// Dependencies should be an empty slice since the test go.mod has no external dependencies
-	if len(context.Dependencies) < 0 {
-		t.Errorf("Expected non-negative number of dependencies, got %d", len(context.Dependencies))
+	if context.Dependencies == nil {
+		t.Error("Dependencies should not be nil")
 	}
 }
 

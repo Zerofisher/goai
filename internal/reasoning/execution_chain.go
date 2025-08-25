@@ -97,26 +97,27 @@ Respond with structured JSON containing the generated code:
 Generate complete, working Go code that implements all steps in the plan. Include comprehensive tests and documentation.`,
 				func() string {
 					if len(plan.Steps) > 0 {
-						result := ""
+						var result strings.Builder
 						for _, step := range plan.Steps {
 							deps := strings.Join(step.Dependencies, ", ")
 							if deps == "" {
 								deps = "None"
 							}
-							result += fmt.Sprintf("**Step %d: %s**\n- Description: %s\n- Dependencies: %s\n- Estimated Time: %s\n\n",
-								step.Priority, step.Name, step.Description, deps, step.EstimatedTime.String())
+							result.WriteString(fmt.Sprintf("**Step %d: %s**\n- Description: %s\n- Dependencies: %s\n- Estimated Time: %s\n\n",
+								step.Priority, step.Name, step.Description, deps, step.EstimatedTime.String()))
 						}
-						return result
+						return result.String()
 					}
 					return "No steps defined"
 				}(),
 				func() string {
 					if len(plan.Dependencies) > 0 {
-						result := "**Project Dependencies**:\n"
+						var result strings.Builder
+						result.WriteString("**Project Dependencies**:\n")
 						for _, dep := range plan.Dependencies {
-							result += fmt.Sprintf("- %s %s (%s): %s\n", dep.Name, dep.Version, dep.Type, dep.Description)
+							result.WriteString(fmt.Sprintf("- %s %s (%s): %s\n", dep.Name, dep.Version, dep.Type, dep.Description))
 						}
-						return result
+						return result.String()
 					}
 					return ""
 				}(),
@@ -130,11 +131,12 @@ Generate complete, working Go code that implements all steps in the plan. Includ
 				}(),
 				func() string {
 					if len(plan.ValidationRules) > 0 {
-						result := "**Validation Requirements**:\n"
+						var result strings.Builder
+						result.WriteString("**Validation Requirements**:\n")
 						for _, rule := range plan.ValidationRules {
-							result += fmt.Sprintf("- %s: %s\n", rule.Type, rule.Description)
+							result.WriteString(fmt.Sprintf("- %s: %s\n", rule.Type, rule.Description))
 						}
-						return result
+						return result.String()
 					}
 					return ""
 				}(),

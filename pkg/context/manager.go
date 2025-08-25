@@ -122,7 +122,7 @@ func (cm *ContextManager) LoadConfiguration(configPath string) (*types.GOAIConfi
 // WatchFileChanges sets up file watching for real-time updates
 func (cm *ContextManager) WatchFileChanges(callback func(*types.FileChangeEvent)) error {
 	if cm.watcher != nil {
-		cm.watcher.Stop()
+		_ = cm.watcher.Stop()
 	}
 
 	watcher, err := NewFileWatcher(cm.workdir)
@@ -203,9 +203,7 @@ func (cm *ContextManager) loadGitInfo() (*types.GitInfo, error) {
 
 	var remoteURLs []string
 	for _, remote := range remotes {
-		for _, url := range remote.Config().URLs {
-			remoteURLs = append(remoteURLs, url)
-		}
+		remoteURLs = append(remoteURLs, remote.Config().URLs...)
 	}
 
 	// Get current branch name
