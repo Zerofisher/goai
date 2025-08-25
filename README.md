@@ -1,5 +1,11 @@
 # GoAI Coder
 
+[![Tests](https://github.com/Zerofisher/goai/actions/workflows/test.yml/badge.svg)](https://github.com/Zerofisher/goai/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/Zerofisher/goai/branch/main/graph/badge.svg)](https://codecov.io/gh/Zerofisher/goai)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Zerofisher/goai)](https://goreportcard.com/report/github.com/Zerofisher/goai)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/Zerofisher/goai)](https://github.com/Zerofisher/goai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A reasoning-based programming assistant CLI tool built in Go that provides intelligent code generation, analysis, and problem-solving capabilities with a focus on context-aware assistance.
 
 ## Features
@@ -10,7 +16,12 @@ A reasoning-based programming assistant CLI tool built in Go that provides intel
 - **Code Generation**: Creates production-ready code with proper error handling and tests
 - **Code Validation**: Performs comprehensive validation including static analysis and testing
 - **Project Context**: Git integration, file watching, and project structure analysis
-- **Codebase Indexing**: Full-text search with intelligent chunking and BM25 ranking
+- **Advanced Codebase Indexing**: Multi-modal search system with:
+  - **Full-Text Search**: SQLite FTS5 with BM25 ranking for keyword matching
+  - **Symbol Search**: Go AST-based symbol indexing for functions, types, and variables
+  - **Semantic Search**: Vector embeddings with OpenAI integration for meaning-based retrieval
+  - **Hybrid Retrieval**: Parallel multi-retriever system with intelligent reranking
+  - **Recent Files**: Git-aware recent file tracking and context prioritization
 
 ## Architecture
 
@@ -118,6 +129,36 @@ go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out -o coverage.html
 ```
 
+## Code Quality
+
+Ensure code quality with linting and static analysis:
+
+```bash
+# Run golangci-lint (recommended)
+golangci-lint run
+
+# Run specific linters
+golangci-lint run --disable-all --enable=errcheck,staticcheck,gosec
+
+# Run linter on specific package
+golangci-lint run ./pkg/indexing
+
+# Auto-fix some issues
+golangci-lint run --fix
+
+# Run go vet for basic static analysis
+go vet ./...
+```
+
+Install golangci-lint if not already available:
+```bash
+# macOS
+brew install golangci-lint
+
+# Linux/Windows
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+```
+
 ## Development
 
 ### Project Structure
@@ -136,16 +177,34 @@ goai/
 
 ### Key Components
 
-- **Reasoning Engine**: Four-chain system for problem-solving
-- **Context Manager**: Project structure analysis and Git integration
-- **Indexing System**: File discovery, chunking, and full-text search
-- **CLI Framework**: Cobra-based command structure
+- **Reasoning Engine**: Four-chain system for problem-solving (Analysis → Planning → Execution → Validation)
+- **Context Manager**: Project structure analysis, Git integration, and intelligent file watching
+- **Enhanced Indexing System**: Multi-modal search with:
+  - File discovery and intelligent chunking
+  - SQLite FTS5 full-text search with BM25 ranking
+  - Go AST symbol parsing and indexing
+  - OpenAI vector embeddings for semantic search
+  - Hybrid retrieval with parallel execution and reranking
+  - Incremental updates and real-time synchronization
+- **CLI Framework**: Cobra-based command structure with comprehensive help system
 
 ### Running Examples
 
 Test the indexing system:
 ```bash
-go run ./pkg/indexing/example_usage.go
+go run ./cmd/indexing-example
+```
+
+Test individual indexing components:
+```bash
+# Run enhanced indexing tests
+go test ./pkg/indexing -v -run TestEnhancedIndexManager
+
+# Test embedding functionality
+go test ./pkg/indexing -v -run TestEmbeddingProvider
+
+# Test retrieval system
+go test ./pkg/indexing -v -run TestRetrievers
 ```
 
 Test the full reasoning chain:
@@ -166,9 +225,14 @@ go run ./examples/full_reasoning_chain.go
 - [x] CLI framework with Cobra
 - [x] Core data types and interfaces
 - [x] Eino-based reasoning chains
-- [x] Codebase indexing and search
+- [x] **Complete Codebase Indexing and Search System**:
+  - [x] Full-text search with SQLite FTS5
+  - [x] Symbol indexing with Go AST parser
+  - [x] Vector embeddings with OpenAI integration
+  - [x] Hybrid retrieval and intelligent reranking
+  - [x] Enhanced index manager with all search types
 - [ ] Tool system integration
-- [ ] Vector embeddings support
+- [ ] Parallel processing with Eino Graphs
 - [ ] Web UI interface
 - [ ] Plugin system
 

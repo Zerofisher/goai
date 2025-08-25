@@ -1,6 +1,7 @@
 package context
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/Zerofisher/goai/pkg/indexing"
 	"github.com/Zerofisher/goai/pkg/types"
 )
 
@@ -20,6 +22,7 @@ type ContextManager struct {
 	structAnalyzer *ProjectStructureAnalyzer
 	depAnalyzer    *DependencyAnalyzer
 	watcher        *FileWatcher
+	indexManager   indexing.CodebaseIndexer
 }
 
 // NewContextManager creates a new context manager
@@ -38,6 +41,19 @@ func NewContextManager(workdir string) (*ContextManager, error) {
 	// Initialize analyzers
 	cm.structAnalyzer = NewProjectStructureAnalyzer(workdir)
 	cm.depAnalyzer = NewDependencyAnalyzer(workdir)
+
+	// Initialize index manager (optional - may fail in test environments)
+	dbPath := filepath.Join(workdir, ".goai", "index.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err == nil {
+		indexManager, err := indexing.NewIndexManagerWithDefaults(dbPath)
+		if err != nil {
+			fmt.Printf("Warning: Failed to initialize index manager: %v\n", err)
+		} else {
+			cm.indexManager = indexManager
+		}
+	} else {
+		fmt.Printf("Warning: Failed to create index directory: %v\n", err)
+	}
 
 	return cm, nil
 }
@@ -328,4 +344,109 @@ func (cm *ContextManager) RefreshContext() (*types.ProjectContext, error) {
 func (cm *ContextManager) UpdateConfig(config *types.GOAIConfig) error {
 	parser := NewGOAIConfigParser()
 	return parser.WriteFile(cm.configPath, config)
+}
+
+// BuildIndex builds the codebase index for enhanced search and reasoning
+func (cm *ContextManager) BuildIndex(ctx context.Context) error {
+	if cm.indexManager == nil {
+		return fmt.Errorf("index manager not initialized")
+	}
+	
+	return cm.indexManager.BuildIndex(ctx, cm.workdir)
+}
+
+// RefreshIndex refreshes the index with specified file changes
+func (cm *ContextManager) RefreshIndex(ctx context.Context, paths []string) error {
+	if cm.indexManager == nil {
+		return fmt.Errorf("index manager not initialized")
+	}
+	
+	return cm.indexManager.RefreshIndex(ctx, paths)
+}
+
+// SearchCode performs code search using the index
+func (cm *ContextManager) SearchCode(ctx context.Context, query string, maxResults int) ([]*indexing.SearchResult, error) {
+	if cm.indexManager == nil {
+		return nil, fmt.Errorf("index manager not initialized")
+	}
+	
+	searchReq := &indexing.SearchRequest{
+		Query:          query,
+		WorkingDir:     cm.workdir,
+		MaxResults:     maxResults,
+		IncludeContent: true,
+		SearchTypes:    []indexing.SearchType{indexing.SearchTypeFullText},
+	}
+	
+	// For now, return a single result - this will be enhanced when we implement multiple results
+	result, err := cm.indexManager.Search(ctx, searchReq)
+	if err != nil {
+		return nil, err
+	}
+	
+	return []*indexing.SearchResult{result}, nil
+}
+
+// GetRelevantContext returns relevant code context for reasoning tasks
+func (cm *ContextManager) GetRelevantContext(ctx context.Context, query string, maxItems int) ([]*indexing.ContextItem, error) {
+	if cm.indexManager == nil {
+		return nil, fmt.Errorf("index manager not initialized")
+	}
+	
+	opts := &indexing.ContextOptions{
+		MaxItems:           maxItems,
+		MaxCharsPerItem:    1000,
+		ContextTypes:       []indexing.ContextType{indexing.ContextTypeFunction, indexing.ContextTypeClass, indexing.ContextTypeInterface},
+		RelevanceThreshold: 0.5,
+		WorkingDir:         cm.workdir,
+		IncludeSource:      true,
+	}
+	
+	return cm.indexManager.GetContextItems(ctx, query, opts)
+}
+
+// GetIndexStatus returns the current index status
+func (cm *ContextManager) GetIndexStatus() (*indexing.IndexStatus, error) {
+	if cm.indexManager == nil {
+		return nil, fmt.Errorf("index manager not initialized")
+	}
+	
+	return cm.indexManager.GetIndexStatus(cm.workdir)
+}
+
+// IsIndexReady checks if the index is ready for queries
+func (cm *ContextManager) IsIndexReady() bool {
+	if cm.indexManager == nil {
+		return false
+	}
+	
+	return cm.indexManager.IsIndexReady(cm.workdir)
+}
+
+// WaitForIndex waits for indexing to complete
+func (cm *ContextManager) WaitForIndex(ctx context.Context) error {
+	if cm.indexManager == nil {
+		return fmt.Errorf("index manager not initialized")
+	}
+	
+	return cm.indexManager.WaitForIndex(ctx, cm.workdir)
+}
+
+// Close closes the context manager and all its resources
+func (cm *ContextManager) Close() error {
+	// Stop file watcher
+	if err := cm.Stop(); err != nil {
+		fmt.Printf("Warning: Failed to stop file watcher: %v\n", err)
+	}
+	
+	// Close index manager
+	if cm.indexManager != nil {
+		if indexManager, ok := cm.indexManager.(*indexing.IndexManager); ok {
+			if err := indexManager.Close(); err != nil {
+				fmt.Printf("Warning: Failed to close index manager: %v\n", err)
+			}
+		}
+	}
+	
+	return nil
 }

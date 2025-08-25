@@ -38,8 +38,6 @@ func ExampleUsage() error {
 	// Step 3: Configure chunker
 	fmt.Println("\n📄 Step 3: Configuring document chunker...")
 	chunker := NewDefaultChunker()
-	chunker.SetMaxChunkSize(800)  // Smaller chunks for this example
-	chunker.SetOverlapSize(80)    // Small overlap
 	manager.SetChunker(chunker)
 
 	// Step 4: Register an FTS index
@@ -107,8 +105,9 @@ func ExampleUsage() error {
 	contextOpts := &ContextOptions{
 		MaxItems:           5,
 		MaxCharsPerItem:    500,
-		ContextTypes:       []ContextType{ContextTypeFunction, ContextTypeSnippet},
+		ContextTypes:       []ContextType{ContextTypeFunction, ContextTypeClass},
 		RelevanceThreshold: 0.5,
+		WorkingDir:         tempDir,
 	}
 
 	contextItems, err := manager.GetContextItems(ctx, "HTTP server setup", contextOpts)

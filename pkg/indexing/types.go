@@ -27,6 +27,7 @@ type SearchRequest struct {
 	IncludeContent  bool              `json:"include_content"`
 	SearchTypes     []SearchType      `json:"search_types"`
 	Context         map[string]interface{} `json:"context,omitempty"`
+	Offset          int               `json:"offset,omitempty"`
 }
 
 // SearchResult represents a search result
@@ -59,6 +60,9 @@ type ContextOptions struct {
 	MaxCharsPerItem int               `json:"max_chars_per_item"`
 	ContextTypes    []ContextType     `json:"context_types"`
 	RelevanceThreshold float64        `json:"relevance_threshold"`
+	WorkingDir      string            `json:"working_dir"`
+	FileTypes       []string          `json:"file_types,omitempty"`
+	IncludeSource   bool              `json:"include_source"`
 }
 
 // IndexTag identifies an index operation
@@ -218,6 +222,7 @@ const (
 	ContextTypeImport       ContextType = "import"
 	ContextTypeComment      ContextType = "comment"
 	ContextTypeSnippet      ContextType = "snippet"
+	ContextTypeGeneral      ContextType = "general"
 )
 
 // ChunkType represents different types of chunks

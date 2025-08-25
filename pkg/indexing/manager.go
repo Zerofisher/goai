@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -28,6 +29,21 @@ func NewIndexManager() *IndexManager {
 		filter:      NewDefaultFileFilter(),
 		chunker:     NewDefaultChunker(),
 	}
+}
+
+// NewIndexManagerWithDefaults creates a new index manager with default FTS index
+func NewIndexManagerWithDefaults(dbPath string) (*IndexManager, error) {
+	manager := NewIndexManager()
+	
+	// Create and register FTS index
+	ftsIndex, err := NewFTSIndex(dbPath, manager.chunker)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create FTS index: %w", err)
+	}
+	
+	manager.RegisterIndex(ftsIndex)
+	
+	return manager, nil
 }
 
 // RegisterIndex registers an index implementation
@@ -314,31 +330,140 @@ func (im *IndexManager) Search(ctx context.Context, req *SearchRequest) (*Search
 		return nil, fmt.Errorf("index not ready for directory: %s", req.WorkingDir)
 	}
 	
-	// For now, return a simple implementation
-	// This will be enhanced when we implement specific index types
-	return &SearchResult{
-		FilePath:   "example.go",
-		Content:    "// Example search result",
-		Snippet:    "Example search result",
-		Score:      0.8,
-		SearchType: SearchTypeFullText,
-	}, nil
+	im.mu.RLock()
+	defer im.mu.RUnlock()
+	
+	// Convert SearchRequest to SearchOptions for individual indexes
+	opts := &SearchOptions{
+		MaxResults:     req.MaxResults,
+		FileTypes:      req.FileTypes,
+		IncludeContent: req.IncludeContent,
+		Offset:         req.Offset,
+	}
+	
+	// Search across all registered indexes and aggregate results
+	var allResults []*SearchResult
+	for _, index := range im.indexes {
+		results, err := index.Search(ctx, req.Query, opts)
+		if err != nil {
+			// Log error but continue with other indexes
+			continue
+		}
+		allResults = append(allResults, results...)
+	}
+	
+	if len(allResults) == 0 {
+		return nil, fmt.Errorf("no results found for query: %s", req.Query)
+	}
+	
+	// For now, return the first result (this could be enhanced with ranking)
+	return allResults[0], nil
 }
 
 // GetContextItems returns context items for reasoning
 func (im *IndexManager) GetContextItems(ctx context.Context, query string, opts *ContextOptions) ([]*ContextItem, error) {
-	// For now, return a simple implementation
-	// This will be enhanced when we implement specific retrievers
-	return []*ContextItem{
-		{
-			FilePath:    "example.go",
-			Content:     "// Example context item",
-			StartLine:   1,
-			EndLine:     5,
-			ContextType: ContextTypeFunction,
-			Relevance:   0.9,
-		},
-	}, nil
+	if opts == nil {
+		opts = &ContextOptions{
+			MaxItems:      10,
+			ContextTypes:  []ContextType{ContextTypeFunction, ContextTypeClass, ContextTypeInterface},
+			IncludeSource: true,
+		}
+	}
+	
+	// Use search to find relevant code items
+	searchReq := &SearchRequest{
+		Query:          query,
+		WorkingDir:     opts.WorkingDir,
+		MaxResults:     opts.MaxItems * 2, // Search for more to filter later
+		IncludeContent: true,
+		FileTypes:      opts.FileTypes,
+	}
+	
+	// Perform search to get initial results
+	im.mu.RLock()
+	var allResults []*SearchResult
+	for _, index := range im.indexes {
+		searchOpts := &SearchOptions{
+			MaxResults:     searchReq.MaxResults,
+			FileTypes:      searchReq.FileTypes,
+			IncludeContent: searchReq.IncludeContent,
+		}
+		
+		results, err := index.Search(ctx, searchReq.Query, searchOpts)
+		if err != nil {
+			continue
+		}
+		allResults = append(allResults, results...)
+	}
+	im.mu.RUnlock()
+	
+	// Convert search results to context items
+	var contextItems []*ContextItem
+	for _, result := range allResults {
+		if len(contextItems) >= opts.MaxItems {
+			break
+		}
+		
+		contextItem := &ContextItem{
+			FilePath:    result.FilePath,
+			Content:     result.Content,
+			StartLine:   result.LineNumber,
+			EndLine:     result.LineNumber + 10, // Estimate end line
+			ContextType: im.inferContextType(result.Content),
+			Relevance:   result.Score,
+		}
+		
+		// Filter by context type if specified
+		if len(opts.ContextTypes) > 0 {
+			found := false
+			for _, ctxType := range opts.ContextTypes {
+				if contextItem.ContextType == ctxType {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+		
+		contextItems = append(contextItems, contextItem)
+	}
+	
+	if len(contextItems) == 0 {
+		return []*ContextItem{}, nil
+	}
+	
+	return contextItems, nil
+}
+
+// inferContextType attempts to determine the context type from content
+func (im *IndexManager) inferContextType(content string) ContextType {
+	content = strings.TrimSpace(content)
+	
+	// Basic heuristics for Go code
+	if strings.Contains(content, "func ") {
+		return ContextTypeFunction
+	}
+	if strings.Contains(content, "type ") && strings.Contains(content, "struct") {
+		return ContextTypeClass
+	}
+	if strings.Contains(content, "type ") && strings.Contains(content, "interface") {
+		return ContextTypeInterface
+	}
+	if strings.Contains(content, "var ") || strings.Contains(content, "const ") {
+		return ContextTypeVariable
+	}
+	
+	// Check for common programming patterns
+	if strings.Contains(content, "import") {
+		return ContextTypeImport
+	}
+	if strings.Contains(content, "//") || strings.Contains(content, "/*") {
+		return ContextTypeComment
+	}
+	
+	return ContextTypeGeneral
 }
 
 // updateStatus safely updates the index status

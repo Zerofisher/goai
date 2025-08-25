@@ -40,7 +40,7 @@ func NewFTSIndex(dbPath string, chunker Chunker) (*FTSIndex, error) {
 // initialize creates the database and tables
 func (f *FTSIndex) initialize() error {
 	var err error
-	f.db, err = sql.Open("sqlite3", f.dbPath+"?_journal=WAL&_synchronous=NORMAL")
+	f.db, err = sql.Open("sqlite", f.dbPath+"?_journal=WAL&_synchronous=NORMAL")
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
@@ -230,27 +230,38 @@ func (f *FTSIndex) Search(ctx context.Context, query string, opts *SearchOptions
 	for rows.Next() {
 		var result SearchResult
 		var rank float64
+		var chunkID, filePath, snippet, language, chunkType string
+		var startLine, endLine int
 		
 		err := rows.Scan(
-			&result.FilePath,
-			&result.FilePath,
-			&result.Snippet,
+			&chunkID,
+			&filePath,
+			&snippet,
 			&rank,
-			&result.LineNumber,
-			&result.ColumnNumber,
-			&result.Metadata,
-			&result.Metadata,
+			&startLine,
+			&endLine,
+			&language,
+			&chunkType,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan result: %w", err)
 		}
 		
-		// Convert FTS5 rank to a normalized score (0-1)
+		// Populate result
+		result.FilePath = filePath
+		result.Snippet = snippet
+		result.LineNumber = startLine
+		result.ColumnNumber = endLine
 		result.Score = f.normalizeRank(rank)
 		result.SearchType = SearchTypeFullText
+		result.Metadata = map[string]interface{}{
+			"language": language,
+			"chunk_type": chunkType,
+			"chunk_id": chunkID,
+		}
 		
 		if opts.IncludeContent {
-			content, err := f.getChunkContent(ctx, result.FilePath)
+			content, err := f.getChunkContent(ctx, chunkID)
 			if err == nil {
 				result.Content = content
 			}
@@ -265,18 +276,23 @@ func (f *FTSIndex) Search(ctx context.Context, query string, opts *SearchOptions
 // GetStats returns index statistics
 func (f *FTSIndex) GetStats() (*IndexStats, error) {
 	var totalDocs int64
-	var totalSize int64
+	var totalSize sql.NullInt64
 	
-	err := f.db.QueryRow("SELECT COUNT(*), SUM(file_size) FROM chunk_metadata").Scan(&totalDocs, &totalSize)
+	err := f.db.QueryRow("SELECT COUNT(*), COALESCE(SUM(file_size), 0) FROM chunk_metadata").Scan(&totalDocs, &totalSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stats: %w", err)
+	}
+	
+	size := int64(0)
+	if totalSize.Valid {
+		size = totalSize.Int64
 	}
 	
 	return &IndexStats{
 		Name:           f.name,
 		Version:        f.version,
 		TotalDocuments: totalDocs,
-		TotalSize:      totalSize,
+		TotalSize:      size,
 		LastUpdated:    time.Now(), // TODO: Store actual last updated time
 	}, nil
 }

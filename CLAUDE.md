@@ -49,12 +49,22 @@ go tool cover -html=coverage.out -o coverage.html
 ./goai --help                          # Show help
 go run ./cmd/goai think "Create a REST API"  # Problem analysis (placeholder)
 go run ./cmd/indexing-example          # Demo indexing system
+go run ./examples/full_reasoning_chain.go  # Complete reasoning chain demo
 ```
 
 **Test reasoning chains (requires OpenAI API key):**
 ```bash
 export OPENAI_API_KEY="your-key"
+export OPENAI_MODEL_NAME="gpt-4"       # Optional, defaults to gpt-4
 go test ./internal/reasoning/ -v -run TestEngine_AnalyzeProblem_ValidKey
+```
+
+**Code Quality Checks:**
+```bash
+golangci-lint run                      # Run all linters (comprehensive)
+golangci-lint run ./pkg/indexing       # Run linters on specific package
+golangci-lint run --fix                # Auto-fix issues where possible
+go vet ./...                           # Basic static analysis
 ```
 
 ## Core Systems
@@ -69,10 +79,15 @@ Four-chain Eino-based system for AI-powered code assistance:
 All chains include fallback mechanisms for when LLM responses can't be parsed as JSON.
 
 ### Indexing System (pkg/indexing)  
-Production-ready codebase indexing with:
+Complete multi-modal codebase indexing and search system:
 - **File Discovery**: Smart filtering with .gitignore support and language detection
 - **Document Chunking**: Intelligent segmentation respecting code boundaries (functions, classes)
-- **FTS5 Search**: SQLite-based full-text search with BM25 ranking
+- **Full-Text Search**: SQLite FTS5 with BM25 ranking (`fts_index.go`)
+- **Symbol Indexing**: Go AST parser for functions, types, variables (`symbol_index.go`, `treesitter_parser.go`)
+- **Semantic Search**: Vector embeddings with OpenAI integration (`embedding_index.go`, `embedding_provider.go`)
+- **Specialized Retrievers**: FTS, semantic, symbol, recent files retrievers (`retrievers.go`)
+- **Hybrid Pipeline**: Parallel execution with intelligent reranking (`reranker.go`)
+- **Enhanced Manager**: Unified interface for all search capabilities (`enhanced_manager.go`)
 - **Index Management**: Concurrent operations, incremental updates, status monitoring
 
 ### Context Management (pkg/context)
@@ -102,10 +117,85 @@ export OPENAI_MODEL_NAME="gpt-4"  # Optional, defaults to gpt-4
 - Data models and validation
 - Context management system  
 - Eino-based reasoning chains with OpenAI integration
-- Comprehensive indexing system with FTS5 search
+- **Complete multi-modal indexing system**:
+  - Full-text search with SQLite FTS5
+  - Symbol indexing with Go AST parser  
+  - Vector embeddings with OpenAI integration
+  - Specialized retrievers (FTS, semantic, symbol, recent files)
+  - Hybrid retrieval pipeline with intelligent reranking
+  - Enhanced index manager with unified API
 
 **🚧 In Progress/Placeholder:**
-- CLI command implementations (skeleton exists)
+- CLI command implementations (skeleton exists) 
 - Tool system for file operations
 - Vector embedding support in indexing
 - Parallel processing with Eino Graphs
+
+## Development Workflow
+
+**Full Quality Check Pipeline:**
+```bash
+# 1. Run tests with coverage
+go test -coverprofile=coverage.out ./...
+
+# 2. Check code quality
+golangci-lint run
+
+# 3. Verify build
+go build ./cmd/goai
+
+# 4. Generate coverage report (optional)
+go tool cover -html=coverage.out -o coverage.html
+```
+
+**Pre-commit Quality Gate:**
+```bash
+# Quick quality check before committing
+go test ./... && golangci-lint run && go build ./cmd/goai
+```
+
+## Development Tips
+
+**Key Interface Locations:**
+- Core interfaces defined in `pkg/types/interfaces.go`
+- Reasoning engine interface: `ReasoningEngine` with 4-chain methods
+- Context management: `ContextManager` for project context and Git integration
+- Indexing: `CodebaseIndexer` for file discovery and search
+
+**Important Implementation Details:**
+- Context manager creates `.goai/` directory with multiple index databases:
+  - `fts_index.db`: SQLite FTS5 for full-text search
+  - `symbol_index.db`: SQLite for symbol indexing  
+  - `embedding_index.db`: SQLite for vector embeddings
+- Enhanced index manager (`EnhancedIndexManager`) provides unified access to all search types
+- Reasoning chains include JSON parsing fallbacks for robustness
+- File filtering respects `.gitignore` patterns automatically
+
+**Code Quality Standards:**
+- All code must pass `golangci-lint run` with 0 issues
+- Maintain test coverage above 60% for core packages (`pkg/indexing`, `pkg/context`, `pkg/types`)
+- Use proper error handling with `defer func() { _ = resource.Close() }()` pattern for non-critical errors
+- Follow Go best practices: interfaces in consumer packages, concrete types in provider packages
+- All indexes support concurrent operations with proper mutex locking
+- Vector embeddings use Eino's OpenAI integration with fallback to mock provider
+- Hybrid retrieval combines multiple retrievers with intelligent reranking
+
+**Running Individual Components:**
+```bash
+# Test enhanced indexing system
+go run ./cmd/indexing-example
+
+# Test all indexing functionality
+go test ./pkg/indexing -v
+
+# Test specific indexing components
+go test ./pkg/indexing -v -run TestEnhancedIndexManager
+go test ./pkg/indexing -v -run TestEmbeddingProvider
+go test ./pkg/indexing -v -run TestRetrievers
+
+# Run single test file
+go test ./pkg/context -v -run TestContextManager
+
+# Test with race detection
+go test -race ./pkg/indexing
+```
