@@ -49,8 +49,8 @@ func TestEngine_NewEngine(t *testing.T) {
 
 func TestEngine_AnalyzeProblem_Fallback(t *testing.T) {
 	// Test with invalid API key to trigger fallback behavior
-	os.Setenv("OPENAI_API_KEY", "invalid-key")
-	defer os.Unsetenv("OPENAI_API_KEY")
+	_ = os.Setenv("OPENAI_API_KEY", "invalid-key")
+	defer func() { _ = os.Unsetenv("OPENAI_API_KEY") }()
 	
 	ctx := context.Background()
 	mockContextManager := &MockContextManager{}

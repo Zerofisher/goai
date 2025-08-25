@@ -59,7 +59,7 @@ func (da *DependencyAnalyzer) analyzeGoModDependencies() ([]*types.Dependency, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to open go.mod: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var dependencies []*types.Dependency
 	scanner := bufio.NewScanner(file)
@@ -254,7 +254,7 @@ func (da *DependencyAnalyzer) analyzeRequirementsTxt() ([]*types.Dependency, err
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var dependencies []*types.Dependency
 	scanner := bufio.NewScanner(file)

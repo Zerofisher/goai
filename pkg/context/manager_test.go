@@ -15,7 +15,7 @@ func TestNewContextManager(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	cm, err := NewContextManager(tmpDir)
 	if err != nil {
@@ -50,7 +50,7 @@ func TestBuildProjectContext(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create some test files
 	testFiles := []string{
@@ -156,7 +156,7 @@ func TestLoadConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	configContent := `# GOAI Configuration
 
@@ -222,7 +222,7 @@ func TestLoadConfigurationMissing(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	cm, err := NewContextManager(tmpDir)
 	if err != nil {
@@ -323,7 +323,7 @@ func TestDetectLanguage(t *testing.T) {
 			if err != nil {
 				t.Fatal("Failed to create temp dir:", err)
 			}
-			defer os.RemoveAll(tmpDir)
+			defer func() { _ = os.RemoveAll(tmpDir) }()
 
 			// Create test files
 			for filename, content := range tc.files {
@@ -356,7 +356,7 @@ func TestGetWorkingDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	cm, err := NewContextManager(tmpDir)
 	if err != nil {
@@ -374,7 +374,7 @@ func TestUpdateConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	cm, err := NewContextManager(tmpDir)
 	if err != nil {
@@ -430,7 +430,7 @@ func TestRefreshContext(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create initial file
 	if err := os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main\n"), 0644); err != nil {
@@ -476,7 +476,7 @@ func TestStop(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	cm, err := NewContextManager(tmpDir)
 	if err != nil {
@@ -496,7 +496,7 @@ func BenchmarkBuildProjectContext(b *testing.B) {
 	if err != nil {
 		b.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create some test files
 	testFiles := []string{

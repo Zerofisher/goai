@@ -159,7 +159,7 @@ func TestIndexManager_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 	
 	// Create test files
 	testFile := filepath.Join(tempDir, "test.go")
@@ -205,7 +205,7 @@ func TestGitignoreFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 	
 	// Create .gitignore file
 	gitignorePath := filepath.Join(tempDir, ".gitignore")
@@ -252,7 +252,7 @@ func TestFSDirectoryWalker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 	
 	// Create test file structure
 	files := []string{

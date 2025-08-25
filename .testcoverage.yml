@@ -1,0 +1,86 @@
+# Test coverage configuration for Go projects
+# See: https://github.com/vladopajic/go-test-coverage
+
+# Threshold for total test coverage (percentage)
+threshold:
+  # Global coverage threshold
+  total: 70.0
+  
+  # Per-file coverage threshold  
+  file: 60.0
+  
+  # Per-package coverage threshold
+  package: 70.0
+
+# Override coverage thresholds for specific files/packages
+override:
+  # Examples directory - lower coverage requirements
+  "examples/":
+    file: 30.0
+    package: 30.0
+    
+  # Test utilities and mocks
+  "*_test.go":
+    file: 0.0
+    
+  # Generated files
+  "*.pb.go":
+    file: 0.0
+    
+  # Main packages (CLI entry points)
+  "cmd/":
+    file: 50.0
+    package: 50.0
+    
+  # Integration tests
+  "pkg/integration/":
+    file: 40.0
+    package: 40.0
+
+# Exclude files/packages from coverage analysis
+exclude:
+  # Exclude test files from coverage analysis
+  files:
+    - ".*_test.go$"
+    - ".*test.*\\.go$"
+    - ".*/testdata/.*"
+    - ".*/mocks/.*"
+    - ".*/mock_.*\\.go$"
+    
+  # Exclude packages from coverage analysis  
+  packages:
+    - "github.com/Zerofisher/goai/examples"
+    - "github.com/Zerofisher/goai/cmd/indexing-example"
+    
+# Badge configuration (for README)
+badge:
+  # Show coverage badge
+  show: true
+  
+  # Badge file name
+  file-name: "coverage.svg"
+
+# Report configuration
+report:
+  # Show uncovered lines in output
+  show-missing-lines: true
+  
+  # Output format (text, html, xml, json)
+  output-format: "text"
+  
+  # Show individual file coverage
+  show-files: true
+  
+  # Sort files by coverage (asc, desc, none)
+  sort-files: "desc"
+  
+  # Skip empty packages in report
+  skip-empty: true
+
+# Local profile configuration (for local development)
+profile:
+  # Coverage profile file
+  path: "coverage.out"
+  
+  # Remove coverage file after analysis  
+  remove-after: false

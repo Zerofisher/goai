@@ -15,7 +15,7 @@ func ExampleUsage() error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	fmt.Printf("Created example directory: %s\n", tempDir)
 
@@ -27,7 +27,7 @@ func ExampleUsage() error {
 	// Step 1: Create an index manager
 	fmt.Println("\n🔧 Step 1: Creating index manager...")
 	manager := NewIndexManager()
-	defer manager.Close()
+	defer func() { _ = manager.Close() }()
 
 	// Step 2: Set up custom file filter if needed
 	fmt.Println("\n🔍 Step 2: Configuring file filters...")
@@ -49,7 +49,7 @@ func ExampleUsage() error {
 	if err != nil {
 		return fmt.Errorf("failed to create FTS index: %w", err)
 	}
-	defer ftsIndex.Close()
+	defer func() { _ = ftsIndex.Close() }()
 	
 	manager.RegisterIndex(ftsIndex)
 

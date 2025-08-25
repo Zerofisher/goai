@@ -68,13 +68,13 @@ Test Timeout: 30s
 	if err != nil {
 		t.Fatal("Failed to create temp file:", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	_, err = tmpFile.WriteString(content)
 	if err != nil {
 		t.Fatal("Failed to write temp file:", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	parser := NewGOAIConfigParser()
 	config, err := parser.ParseFile(tmpFile.Name())
@@ -196,13 +196,13 @@ Language: go
 	if err != nil {
 		t.Fatal("Failed to create temp file:", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	_, err = tmpFile.WriteString(content)
 	if err != nil {
 		t.Fatal("Failed to write temp file:", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	parser := NewGOAIConfigParser()
 	config, err := parser.ParseFile(tmpFile.Name())
@@ -249,8 +249,8 @@ func TestParseInvalidFile(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp file:", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	_ = tmpFile.Close()
 
 	config, err := parser.ParseFile(tmpFile.Name())
 	if err != nil {
@@ -352,7 +352,7 @@ func TestWriteFile(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create temp dir:", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	filePath := filepath.Join(tmpDir, "GOAI.md")
 	parser := NewGOAIConfigParser()
@@ -586,13 +586,13 @@ Description: This should be parsed
 	if err != nil {
 		t.Fatal("Failed to create temp file:", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	_, err = tmpFile.WriteString(content)
 	if err != nil {
 		t.Fatal("Failed to write temp file:", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	parser := NewGOAIConfigParser()
 	config, err := parser.ParseFile(tmpFile.Name())

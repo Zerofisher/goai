@@ -55,7 +55,7 @@ func TestErrorWithContext(t *testing.T) {
 	err := NewGoAIError(ErrAnalysisFailed, "analysis failed")
 	context := map[string]string{"stage": "syntax"}
 	
-	err.WithContext(context)
+	err = err.WithContext(context)
 	
 	if err.Context == nil {
 		t.Errorf("Expected context to be set")
@@ -76,7 +76,7 @@ func TestErrorWithSuggestions(t *testing.T) {
 	err := NewGoAIError(ErrCodeGeneration, "code generation failed")
 	suggestions := []string{"Check the execution plan", "Verify analysis results"}
 	
-	err.WithSuggestions(suggestions...)
+	err = err.WithSuggestions(suggestions...)
 	
 	if len(err.Suggestions) != 2 {
 		t.Errorf("Expected 2 suggestions, got %d", len(err.Suggestions))

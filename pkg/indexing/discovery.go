@@ -307,9 +307,7 @@ func matchesGitignorePattern(path, pattern string) bool {
 	// A full implementation would need to handle all .gitignore rules
 	
 	// Remove leading slash
-	if strings.HasPrefix(pattern, "/") {
-		pattern = strings.TrimPrefix(pattern, "/")
-	}
+	pattern = strings.TrimPrefix(pattern, "/")
 	
 	// Handle directory patterns
 	if strings.HasSuffix(pattern, "/") {

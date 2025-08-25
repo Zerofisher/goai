@@ -41,12 +41,12 @@ func TestRootCommandExecution(t *testing.T) {
 	err := rootCmd.Execute()
 	
 	// Restore stdout
-	w.Close()
+	_ = w.Close()
 	os.Stdout = oldStdout
 	
 	// Read output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	
 	if err != nil {
@@ -91,6 +91,7 @@ func TestGlobalFlags(t *testing.T) {
 	configFlag := flags.Lookup("config")
 	if configFlag == nil {
 		t.Errorf("Config flag should be defined")
+		return
 	}
 	if configFlag.Shorthand != "c" {
 		t.Errorf("Config flag shorthand should be 'c', got '%s'", configFlag.Shorthand)
@@ -100,6 +101,7 @@ func TestGlobalFlags(t *testing.T) {
 	verboseFlag := flags.Lookup("verbose")
 	if verboseFlag == nil {
 		t.Errorf("Verbose flag should be defined")
+		return
 	}
 	if verboseFlag.Shorthand != "v" {
 		t.Errorf("Verbose flag shorthand should be 'v', got '%s'", verboseFlag.Shorthand)
@@ -109,6 +111,7 @@ func TestGlobalFlags(t *testing.T) {
 	debugFlag := flags.Lookup("debug")
 	if debugFlag == nil {
 		t.Errorf("Debug flag should be defined")
+		return
 	}
 	if debugFlag.Shorthand != "d" {
 		t.Errorf("Debug flag shorthand should be 'd', got '%s'", debugFlag.Shorthand)
@@ -353,8 +356,7 @@ func BenchmarkRootCommandCreation(b *testing.B) {
 		cmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 		cmd.PersistentFlags().BoolP("debug", "d", false, "debug mode")
 		
-		if cmd == nil {
-			b.Errorf("Command creation failed")
-		}
+		// Command is guaranteed to be non-nil after creation
+		_ = cmd
 	}
 }

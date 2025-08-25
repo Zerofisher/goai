@@ -32,7 +32,7 @@ func (p *GOAIConfigParser) ParseFile(filePath string) (*types.GOAIConfig, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	return p.Parse(file)
 }
@@ -285,7 +285,7 @@ func (p *GOAIConfigParser) WriteFile(filePath string, config *types.GOAIConfig) 
 	if err != nil {
 		return fmt.Errorf("failed to create config file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	content := p.GenerateMarkdown(config)
 	_, err = file.WriteString(content)

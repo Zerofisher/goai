@@ -253,6 +253,9 @@ func TestValidateAndFormat(t *testing.T) {
 	if err != nil {
 		t.Errorf("ValidateAndFormat failed for ProblemRequest value: %v", err)
 	}
+	if result == "" {
+		t.Error("Expected non-empty result for ProblemRequest value")
+	}
 	
 	// Test with Analysis
 	analysis := &Analysis{
@@ -264,6 +267,9 @@ func TestValidateAndFormat(t *testing.T) {
 	result, err = ValidateAndFormat(analysis)
 	if err != nil {
 		t.Errorf("ValidateAndFormat failed for Analysis: %v", err)
+	}
+	if result == "" {
+		t.Error("Expected non-empty result for Analysis")
 	}
 	
 	// Test with unsupported type

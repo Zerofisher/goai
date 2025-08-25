@@ -223,7 +223,7 @@ func (f *FTSIndex) Search(ctx context.Context, query string, opts *SearchOptions
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute FTS query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	
 	var results []*SearchResult
 	for rows.Next() {
@@ -341,7 +341,7 @@ func (f *FTSIndex) removeFileChunks(ctx context.Context, tx *sql.Tx, filePath st
 	if err != nil {
 		return fmt.Errorf("failed to query chunks to remove: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	
 	var chunkIDs []string
 	for rows.Next() {

@@ -31,6 +31,7 @@ func TestValidationResult(t *testing.T) {
 	firstError := result.FirstError()
 	if firstError == nil {
 		t.Errorf("Should have first error")
+		return
 	}
 	
 	if firstError.Field != "test_field" {
