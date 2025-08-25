@@ -8,7 +8,8 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	// Use pure Go SQLite implementation for better cross-platform compatibility
+	_ "modernc.org/sqlite"
 )
 
 // FTSIndex implements full-text search using SQLite FTS5

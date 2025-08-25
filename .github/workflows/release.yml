@@ -35,8 +35,10 @@ jobs:
     
     - name: Build binaries
       env:
-        CGO_ENABLED: 1
+        CGO_ENABLED: 0
       run: |
+        mkdir -p dist
+        
         # Build for Linux amd64
         GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o dist/goai-linux-amd64 ./cmd/goai
         
