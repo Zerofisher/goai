@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -78,7 +79,8 @@ func (t *SearchCodeTool) Execute(ctx context.Context, params map[string]any) (*T
 		maxResults = int(mr)
 	}
 	
-	_, _ = params["includeContext"].(bool)
+	// TODO: Implement context inclusion functionality for search results
+	// includeContext, _ := params["includeContext"].(bool)
 	
 	opts := &indexing.SearchOptions{
 		MaxResults: maxResults,
@@ -89,19 +91,8 @@ func (t *SearchCodeTool) Execute(ctx context.Context, params map[string]any) (*T
 	
 	switch searchType {
 	case "text":
-		// Use the base index manager's Search method with FTS search type
-		req := &indexing.SearchRequest{
-			Query:      query,
-			MaxResults: maxResults,
-			SearchTypes: []indexing.SearchType{indexing.SearchTypeFullText},
-		}
-		result, searchErr := t.indexManager.Search(ctx, req)
-		if searchErr != nil {
-			err = searchErr
-		} else {
-			// Convert single result to slice
-			results = []*indexing.SearchResult{result}
-		}
+		// Use the SearchFullText method to get multiple results
+		results, err = t.indexManager.SearchFullText(ctx, query, opts)
 	case "semantic":
 		results, err = t.indexManager.SearchSemantic(ctx, query, opts)
 	case "symbol":
@@ -540,9 +531,20 @@ func (t *ViewDiffTool) diffTwoFiles(path1, path2 string, contextLines int) (stri
 }
 
 func (t *ViewDiffTool) diffWithGit(path string, contextLines int) (string, error) {
-	// This would typically use Git commands to compare with the repository version
-	// For now, we'll return a placeholder implementation
-	return fmt.Sprintf("Git diff for %s would be shown here", path), nil
+	// Use git diff to compare the file with the repository version
+	cmd := exec.Command("git", "diff", fmt.Sprintf("-U%d", contextLines), "--", path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		// If git command fails, return a more informative error
+		return "", fmt.Errorf("failed to run git diff (ensure file is in a git repository): %v\nOutput: %s", err, string(out))
+	}
+	
+	// If no changes, git diff returns empty output
+	if len(out) == 0 {
+		return "No changes detected compared to repository version", nil
+	}
+	
+	return string(out), nil
 }
 
 func (t *ViewDiffTool) generateUnifiedDiff(path1, path2 string, lines1, lines2 []string) string {
@@ -551,7 +553,10 @@ func (t *ViewDiffTool) generateUnifiedDiff(path1, path2 string, lines1, lines2 [
 	diff.WriteString(fmt.Sprintf("--- %s\n", path1))
 	diff.WriteString(fmt.Sprintf("+++ %s\n", path2))
 	
-	// Simple diff algorithm - this could be improved with a proper LCS algorithm
+	// TODO: Improve diff algorithm - current implementation is naive (simple line-by-line comparison)
+	// Consider implementing proper LCS-based diff algorithm or using existing library for better
+	// performance and accuracy with large files
+	// Suggested libraries: github.com/sergi/go-diff or github.com/pmezard/go-difflib
 	maxLen := len(lines1)
 	if len(lines2) > maxLen {
 		maxLen = len(lines2)

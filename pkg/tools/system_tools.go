@@ -315,6 +315,7 @@ func (t *FetchTool) Execute(ctx context.Context, params map[string]any) (*ToolRe
 			Error:   fmt.Sprintf("request failed: %v", err),
 		}, nil
 	}
+	// TODO: Consider logging close errors for better debugging of network issues
 	defer func() { _ = resp.Body.Close() }()
 	
 	// Read response body

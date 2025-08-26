@@ -142,7 +142,18 @@ func (t *WriteFileTool) Execute(ctx context.Context, params map[string]any) (*To
 	cleanPath := filepath.Clean(path)
 	
 	// Create directories if needed
-	if createDirs, exists := params["createDirectories"]; !exists || createDirs.(bool) {
+	createDirs := true
+	if val, exists := params["createDirectories"]; exists {
+		if b, ok := val.(bool); ok {
+			createDirs = b
+		} else {
+			return &ToolResult{
+				Success: false,
+				Error:   "createDirectories parameter must be a boolean",
+			}, nil
+		}
+	}
+	if createDirs {
 		if err := os.MkdirAll(filepath.Dir(cleanPath), 0755); err != nil {
 			return &ToolResult{
 				Success: false,
