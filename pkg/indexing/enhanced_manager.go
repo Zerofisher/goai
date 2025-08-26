@@ -162,6 +162,25 @@ func (em *EnhancedIndexManager) SearchSemantic(ctx context.Context, query string
 	return em.embeddingIndex.Search(ctx, query, opts)
 }
 
+// SearchFullText performs full-text search using the FTS index
+func (em *EnhancedIndexManager) SearchFullText(ctx context.Context, query string, opts *SearchOptions) ([]*SearchResult, error) {
+	em.IndexManager.mu.RLock()
+	var ftsIndex Index
+	for _, index := range em.indexes {
+		if index.Name() == "fts_index" {
+			ftsIndex = index
+			break
+		}
+	}
+	em.IndexManager.mu.RUnlock()
+	
+	if ftsIndex == nil {
+		return nil, fmt.Errorf("FTS index not available")
+	}
+	
+	return ftsIndex.Search(ctx, query, opts)
+}
+
 // GetAvailableSearchTypes returns the types of search supported by this manager
 func (em *EnhancedIndexManager) GetAvailableSearchTypes() []SearchType {
 	var types []SearchType
