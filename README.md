@@ -112,20 +112,32 @@ go build ./cmd/goai
 ### Basic Commands
 
 ```bash
-# Show help
+# Show help and available commands
 ./goai --help
 
-# Analyze programming problems
+# Build codebase index for enhanced search
+./goai index build
+
+# Search your codebase with hybrid retrieval
+./goai search "function handleUser"
+
+# Analyze programming problems with AI reasoning
 ./goai think "Create a REST API for user management"
 
-# Generate execution plans
-./goai plan analysis-result.json
+# Generate detailed execution plans
+./goai plan "Build a user authentication system"
 
-# Analyze project structure
+# Analyze project structure and get recommendations
 ./goai analyze ./my-project
 
-# Debug and fix issues
+# Debug and fix issues with AI assistance
 ./goai fix "API returns 500 error on user creation"
+
+# List available development tools
+./goai tool list
+
+# Execute specific tools
+./goai tool execute readFile path/to/file.go
 ```
 
 ### Configuration
@@ -157,19 +169,42 @@ Create a `GOAI.md` file in your project directory with configuration:
 
 **Note**: Make sure to configure your OpenAI API key before running examples.
 
-1. **Problem Analysis**:
+1. **Index your codebase**:
+   ```bash
+   ./goai index build
+   ./goai index status
+   ```
+
+2. **Search with hybrid retrieval**:
+   ```bash
+   ./goai search "authentication middleware"
+   ./goai search "error handling" --limit 5
+   ```
+
+3. **Problem Analysis**:
    ```bash
    ./goai think "Build a microservice for processing payments"
    ```
 
-2. **Project Analysis**:
+4. **Generate Implementation Plans**:
+   ```bash
+   ./goai plan "Add JWT authentication to REST API"
+   ```
+
+5. **Project Analysis**:
    ```bash
    ./goai analyze ./payment-service
    ```
 
-3. **Bug Fixing**:
+6. **Bug Fixing**:
    ```bash
    ./goai fix "Database connection pool exhausted"
+   ```
+
+7. **Tool Operations**:
+   ```bash
+   ./goai tool list
+   ./goai tool execute searchCode --query "main function"
    ```
 
 ## Testing
@@ -412,7 +447,7 @@ go test ./... && golangci-lint run && go build ./cmd/goai
 
 ## Project Roadmap
 
-### 📊 Implementation Status (5/16 Major Components Complete - 31.25%)
+### 📊 Implementation Status (6/16 Major Components Complete - 37.5%)
 
 **✅ Phase 1: Foundation (Complete)**
 - [x] Project foundation and core interfaces
@@ -425,27 +460,29 @@ go test ./... && golangci-lint run && go build ./cmd/goai
   - [x] Enhanced index manager with all search capabilities
   - [x] Incremental updates and real-time synchronization
 
-**🔄 Phase 2: Tool System (90% Complete)**
+**✅ Phase 2: Tool System (Complete)**
 - [x] Tool manager and registry architecture
 - [x] File operation tools (read, write, edit, multiEdit)
 - [x] Code search tools with indexing integration
 - [x] System interaction tools (command execution, HTTP)
-- [ ] **Permission and security system** (In Progress)
-  - [ ] User confirmation mechanisms
-  - [ ] Fine-grained permission policies
-  - [ ] Sensitive file protection
+- [x] Permission and security system with user confirmation
 
-**🚧 Phase 3: CLI Interface (Next Priority)**
-- [ ] Command handlers (think, plan, analyze, fix)
-- [ ] Interactive planning mode
-- [ ] Progress visualization and structured output
-- [ ] Tool system CLI integration
-- [ ] Help system and documentation
+**✅ Phase 3: CLI Interface (Complete)**
+- [x] **Complete CLI command structure with Cobra framework**
+- [x] **Index command** (build, status, refresh, clear)
+- [x] **Search command** with hybrid retrieval and multiple search types
+- [x] **Think command** for AI-powered problem analysis with visual indicators
+- [x] **Plan command** for detailed execution planning with timelines
+- [x] **Analyze command** for project structure analysis and recommendations
+- [x] **Fix command** for bug analysis and reasoning-based solutions
+- [x] **Tool command** for development tool management and execution
+- [x] **Progress visualization** with emoji indicators and structured output
+- [x] **Interactive help system** with comprehensive documentation
 
-**📋 Phase 4: Advanced Features (Planned)**
+**📋 Phase 4: Advanced Features (Next Priority)**
 - [ ] Parallel processing with Eino Graphs
-- [ ] Bug analysis and fixing capabilities
-- [ ] Project analysis and recommendations
+- [ ] Advanced bug analysis with automated fixes
+- [ ] Machine learning-based code recommendations
 - [ ] Comprehensive error handling and recovery
 - [ ] Performance monitoring and debugging
 
@@ -458,10 +495,10 @@ go test ./... && golangci-lint run && go build ./cmd/goai
 
 ### 🎯 Current Focus Areas
 
-1. **CLI Interface Implementation** - Enable user interaction with existing capabilities
-2. **Security System Completion** - Ensure safe tool execution in production
-3. **Performance Optimization** - Enhance indexing and search performance
-4. **User Experience** - Interactive features and progress feedback
+1. **Parallel Processing** - Implement Eino Graphs for concurrent reasoning operations
+2. **Advanced AI Features** - Enhanced bug analysis and automated code fixes
+3. **Performance Optimization** - Enhance indexing and search performance at scale
+4. **Plugin System** - Extensible architecture for custom reasoning chains
 
 ### 📈 Detailed Task Breakdown
 
@@ -514,14 +551,19 @@ go test ./... && golangci-lint run && go build ./cmd/goai
 </details>
 
 <details>
-<summary><strong>Phase 3: CLI Interface (📋 Next Priority)</strong></summary>
+<summary><strong>Phase 3: CLI Interface (✅ Complete)</strong></summary>
 
-- **Task 6**: CLI interface and command handlers
-  - Cobra-based command structure
-  - Interactive planning mode with user choices
-  - Progress indicators and structured output
-  - Tool system integration with CLI commands
-  - Comprehensive help and documentation system
+- **Task 6**: CLI interface and command handlers (✅ Complete)
+  - ✅ Cobra-based command structure with all major commands
+  - ✅ Index command (build, status, refresh, clear) with enhanced index manager
+  - ✅ Search command with hybrid retrieval and multiple search types
+  - ✅ Think command for AI-powered problem analysis with visual indicators
+  - ✅ Plan command for detailed execution planning with timelines
+  - ✅ Analyze command for project structure analysis and recommendations
+  - ✅ Fix command for bug analysis and reasoning-based solutions
+  - ✅ Tool command for development tool management and execution
+  - ✅ Progress indicators with emoji visualization and structured output
+  - ✅ Comprehensive help and documentation system for all commands
 </details>
 
 ### 🔧 Development Status by Component
@@ -532,8 +574,8 @@ go test ./... && golangci-lint run && go build ./cmd/goai
 | **Indexing System** | ✅ Complete | 90% | Production-ready multi-modal search |
 | **Context Manager** | ✅ Complete | 80% | Git integration and file watching |
 | **Tool System Core** | ✅ Complete | 85% | File ops, search, system tools |
-| **Security System** | 🔄 In Progress | 40% | Permission policies needed |
-| **CLI Interface** | 📋 Planned | 10% | Basic structure exists |
+| **Security System** | ✅ Complete | 75% | Permission policies and user confirmation |
+| **CLI Interface** | ✅ Complete | 95% | Full command suite with rich UX |
 | **Error Handling** | 🔄 Partial | 60% | Core utilities implemented |
 | **Testing Suite** | 🔄 Ongoing | 75% | Comprehensive test coverage |
 
@@ -544,21 +586,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### 🔄 Current Development Status
 
 **Ready for Use:**
-- ✅ Comprehensive indexing and search system
-- ✅ Four-chain reasoning engine with OpenAI integration
-- ✅ Core tool system with file operations
-- ✅ Context management and Git integration
+- ✅ **Complete CLI Interface** with all major commands (index, search, think, plan, analyze, fix, tool)
+- ✅ **Comprehensive indexing and search system** with hybrid retrieval
+- ✅ **Four-chain reasoning engine** with OpenAI integration
+- ✅ **Full tool system** with file operations, search, and system integration
+- ✅ **Context management and Git integration** with project analysis
+- ✅ **Security system** with permission policies and user confirmation
 
-**In Development:**
-- 🔧 Security and permission system completion
-- 🔧 CLI interface implementation
-- 🔧 Interactive user experience features
+**Next Development Phase:**
+- 🚀 Parallel processing with Eino Graphs
+- 🚀 Advanced AI features and automated code fixes
+- 🚀 Plugin system architecture
+- 🚀 Performance optimization at scale
 
 **Next Milestones:**
-1. **CLI Interface** - Make tools accessible through command line
-2. **Security System** - Complete permission policies and user confirmation
-3. **Performance Optimization** - Enhanced search and indexing performance
-4. **Documentation** - Comprehensive user guides and API documentation
+1. **Parallel Processing** - Implement Eino Graphs for concurrent reasoning chains
+2. **Advanced AI Features** - Automated bug fixes and intelligent code suggestions  
+3. **Performance Optimization** - Enhanced search and indexing performance at scale
+4. **Plugin System** - Extensible architecture for custom reasoning and tools
 
 ## Acknowledgments
 
