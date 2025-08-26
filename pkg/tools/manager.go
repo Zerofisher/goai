@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 )
 
@@ -187,12 +188,12 @@ func validateParameterValue(name string, value any, property ParameterProperty) 
 		}
 		
 	case "array":
-		// Basic array validation - accept both []any and []string and other slice types
-		switch value.(type) {
-		case []any, []string:
-			// Valid array types
-		default:
-			return fmt.Errorf("parameter '%s' must be an array", name)
+		// Use reflection to check if value is any slice type
+		// This is more robust than type switching on specific slice types like []string, []int
+		// because it accepts any slice type ([]T where T is any type)
+		rv := reflect.ValueOf(value)
+		if rv.Kind() != reflect.Slice {
+			return fmt.Errorf("parameter '%s' must be an array (slice)", name)
 		}
 		
 	case "object":

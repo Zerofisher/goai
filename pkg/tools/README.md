@@ -186,6 +186,8 @@ type ToolResult struct {
 ## Safety Features
 
 - **Parameter Validation**: All parameters are validated against the tool's schema
+  - Robust array validation using reflection supports any slice type ([]string, []int, []any, etc.)
+  - Type-safe validation for strings, numbers, booleans, and objects
 - **Confirmation System**: Dangerous operations require user confirmation
 - **Preview Mode**: See what operations will do before executing them
 - **Timeout Support**: Commands can be configured with timeouts

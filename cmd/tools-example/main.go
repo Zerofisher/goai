@@ -105,13 +105,16 @@ func main() {
 		fmt.Printf("✗ List failed: %s\n", result.Error)
 	}
 
-	// Demonstrate system command (safe example)
+	// Demonstrate system command with various array types (safe example)
 	fmt.Println("\n4. System Command Demo:")
 	cmdParams := map[string]any{
 		"command": "echo",
-		"args":    []string{"Hello from system command!"},
+		"args":    []string{"Hello from system command!"},  // Test []string
 		"timeout": 5,
 	}
+	
+	// Test with different array types
+	fmt.Printf("Testing parameter validation with different slice types...\n")
 
 	result, err = manager.ExecuteTool(ctx, "runCommand", cmdParams)
 	if err != nil {

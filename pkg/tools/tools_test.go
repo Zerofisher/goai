@@ -272,3 +272,83 @@ func TestParameterValidation(t *testing.T) {
 		t.Errorf("Unexpected validation error: %v", err)
 	}
 }
+
+func TestArrayParameterValidation(t *testing.T) {
+	// Create a mock tool that expects an array parameter
+	mockTool := &MockArrayTool{}
+	registry := NewToolRegistry()
+	manager := NewToolManager(registry, NewMockConfirmationHandler(true))
+	
+	err := manager.RegisterTool(mockTool)
+	if err != nil {
+		t.Fatalf("Failed to register mock tool: %v", err)
+	}
+	
+	// Test various slice types
+	testCases := []struct {
+		name  string
+		value any
+		valid bool
+	}{
+		{"string slice", []string{"a", "b", "c"}, true},
+		{"int slice", []int{1, 2, 3}, true},
+		{"float64 slice", []float64{1.1, 2.2, 3.3}, true},
+		{"any slice", []any{"mixed", 42, true}, true},
+		{"empty slice", []string{}, true},
+		{"not a slice", "not an array", false},
+		{"map", map[string]string{"key": "value"}, false},
+		{"nil", nil, false},
+	}
+	
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			params := map[string]any{
+				"items": tc.value,
+			}
+			
+			err := manager.ValidateParameters("mockArrayTool", params)
+			
+			if tc.valid && err != nil {
+				t.Errorf("Expected %s to be valid, but got error: %v", tc.name, err)
+			}
+			if !tc.valid && err == nil {
+				t.Errorf("Expected %s to be invalid, but no error was returned", tc.name)
+			}
+		})
+	}
+}
+
+// MockArrayTool for testing array parameter validation
+type MockArrayTool struct{}
+
+func (t *MockArrayTool) Name() string {
+	return "mockArrayTool"
+}
+
+func (t *MockArrayTool) Description() string {
+	return "Mock tool for testing array parameters"
+}
+
+func (t *MockArrayTool) Parameters() ParameterSchema {
+	return ParameterSchema{
+		Required: []string{"items"},
+		Properties: map[string]ParameterProperty{
+			"items": {
+				Type:        "array",
+				Description: "Array of items",
+			},
+		},
+	}
+}
+
+func (t *MockArrayTool) Execute(ctx context.Context, params map[string]any) (*ToolResult, error) {
+	return &ToolResult{Success: true}, nil
+}
+
+func (t *MockArrayTool) RequiresConfirmation() bool {
+	return false
+}
+
+func (t *MockArrayTool) Category() string {
+	return "test"
+}
