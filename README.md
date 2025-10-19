@@ -338,6 +338,10 @@ goai/
 │   └── types/            # Core data structures
 ```
 
+## Acknowledgments
+
+This project was inspired by and references the design of [mini_kode](https://github.com/shareAI-lab/mini_kode), an excellent project that demonstrates the "Model as Agent" philosophy in AI-powered development tools.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
