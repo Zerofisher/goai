@@ -118,8 +118,12 @@ func TestLoad_FromConfig(t *testing.T) {
 func TestLoad_FromEnv(t *testing.T) {
 	// Set environment variable
 	envPrompt := "Test prompt from environment"
-	os.Setenv("GOAI_SYSTEM_PROMPT", envPrompt)
-	defer os.Unsetenv("GOAI_SYSTEM_PROMPT")
+	if err := os.Setenv("GOAI_SYSTEM_PROMPT", envPrompt); err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+	defer func() {
+		_ = os.Unsetenv("GOAI_SYSTEM_PROMPT")
+	}()
 
 	cfg := &config.Config{}
 	ctx := newMockContext("/test/dir")
@@ -143,7 +147,9 @@ func TestLoad_FromMarkdownFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	// Create .goai directory
 	goaiDir := filepath.Join(tempDir, ".goai")
@@ -185,7 +191,9 @@ func TestLoad_FromYAMLFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	// Create .goai directory
 	goaiDir := filepath.Join(tempDir, ".goai")
@@ -316,7 +324,9 @@ func TestCompose_WithProjectInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	cfg := &config.Config{WorkDir: tempDir}
 	ctx := newMockContext(tempDir)
@@ -414,7 +424,9 @@ func TestReloadIfChanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	// Create .goai directory
 	goaiDir := filepath.Join(tempDir, ".goai")
@@ -542,11 +554,17 @@ func TestLoadPriority(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	// Set environment variable (lower priority)
-	os.Setenv("GOAI_SYSTEM_PROMPT", "From env")
-	defer os.Unsetenv("GOAI_SYSTEM_PROMPT")
+	if err := os.Setenv("GOAI_SYSTEM_PROMPT", "From env"); err != nil {
+		t.Fatalf("Failed to set environment variable: %v", err)
+	}
+	defer func() {
+		_ = os.Unsetenv("GOAI_SYSTEM_PROMPT")
+	}()
 
 	// Set config (lower priority)
 	cfg := &config.Config{

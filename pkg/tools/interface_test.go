@@ -116,7 +116,9 @@ func TestToolRegistry_Get(t *testing.T) {
 		name:        "test_tool",
 		description: "A test tool",
 	}
-	registry.Register(tool)
+	if err := registry.Register(tool); err != nil {
+		t.Fatalf("Failed to register tool: %v", err)
+	}
 
 	tests := []struct {
 		name     string
@@ -160,8 +162,12 @@ func TestToolRegistry_List(t *testing.T) {
 	// Add tools
 	tool1 := &MockTool{name: "tool1", description: "First tool"}
 	tool2 := &MockTool{name: "tool2", description: "Second tool"}
-	registry.Register(tool1)
-	registry.Register(tool2)
+	if err := registry.Register(tool1); err != nil {
+		t.Fatalf("Failed to register tool1: %v", err)
+	}
+	if err := registry.Register(tool2); err != nil {
+		t.Fatalf("Failed to register tool2: %v", err)
+	}
 
 	tools = registry.List()
 	if len(tools) != 2 {
@@ -172,7 +178,9 @@ func TestToolRegistry_List(t *testing.T) {
 func TestToolRegistry_Remove(t *testing.T) {
 	registry := NewRegistry()
 	tool := &MockTool{name: "test_tool", description: "Test"}
-	registry.Register(tool)
+	if err := registry.Register(tool); err != nil {
+		t.Fatalf("Failed to register tool: %v", err)
+	}
 
 	// Remove existing tool
 	err := registry.Remove("test_tool")
@@ -195,7 +203,9 @@ func TestToolRegistry_Remove(t *testing.T) {
 func TestToolRegistry_Has(t *testing.T) {
 	registry := NewRegistry()
 	tool := &MockTool{name: "test_tool", description: "Test"}
-	registry.Register(tool)
+	if err := registry.Register(tool); err != nil {
+		t.Fatalf("Failed to register tool: %v", err)
+	}
 
 	if !registry.Has("test_tool") {
 		t.Error("Has() should return true for existing tool")
@@ -210,8 +220,12 @@ func TestToolRegistry_Clear(t *testing.T) {
 	registry := NewRegistry()
 	tool1 := &MockTool{name: "tool1", description: "First"}
 	tool2 := &MockTool{name: "tool2", description: "Second"}
-	registry.Register(tool1)
-	registry.Register(tool2)
+	if err := registry.Register(tool1); err != nil {
+		t.Fatalf("Failed to register tool1: %v", err)
+	}
+	if err := registry.Register(tool2); err != nil {
+		t.Fatalf("Failed to register tool2: %v", err)
+	}
 
 	registry.Clear()
 

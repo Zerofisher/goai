@@ -153,7 +153,7 @@ func (s *ReplaceStrategy) replaceInLineRange(content, oldText, newText string, l
 
 	// Replace only in the specified range (convert to 0-based)
 	for i := lineStart - 1; i < lineEnd; i++ {
-		lines[i] = strings.Replace(lines[i], oldText, newText, -1)
+		lines[i] = strings.ReplaceAll(lines[i], oldText, newText)
 	}
 
 	return strings.Join(lines, "\n"), nil

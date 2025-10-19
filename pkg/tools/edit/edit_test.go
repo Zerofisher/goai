@@ -15,7 +15,9 @@ func TestReplaceStrategy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	// Create test file
 	testFile := filepath.Join(tempDir, "test.txt")
@@ -62,7 +64,9 @@ func TestReplaceStrategy_ReplaceAll(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "foo bar foo baz foo"
@@ -84,7 +88,9 @@ func TestReplaceStrategy_ReplaceAll(t *testing.T) {
 	result, _ := tool.Execute(ctx, input)
 
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Replace all failed: %s", resp.Error)
@@ -103,7 +109,9 @@ func TestReplaceStrategy_LineRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "line 1: foo\nline 2: foo\nline 3: foo"
@@ -125,7 +133,9 @@ func TestReplaceStrategy_LineRange(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Line range replace failed: %s", resp.Error)
@@ -144,7 +154,9 @@ func TestInsertStrategy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "Line 1\nLine 3"
@@ -164,7 +176,9 @@ func TestInsertStrategy(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Insert failed: %s", resp.Error)
@@ -182,7 +196,9 @@ func TestInsertStrategy_AfterAnchor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "# Header\n\n# Footer"
@@ -202,7 +218,9 @@ func TestInsertStrategy_AfterAnchor(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Insert after anchor failed: %s", resp.Error)
@@ -221,7 +239,9 @@ func TestAnchoredStrategy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "Start\n# BEGIN\nOld content\n# END\nFinish"
@@ -243,7 +263,9 @@ func TestAnchoredStrategy(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Anchored edit failed: %s", resp.Error)
@@ -264,7 +286,9 @@ func TestApplyPatchStrategy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "Line 1\nLine 2\nLine 3\nLine 4"
@@ -291,7 +315,9 @@ func TestApplyPatchStrategy(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Errorf("Apply patch failed: %s", resp.Error)
@@ -309,7 +335,9 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	originalContent := "Original content"
@@ -331,7 +359,9 @@ func TestBackupAndRestore(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	// Should fail
 	if resp.Ok {
@@ -351,7 +381,9 @@ func TestConflictDetection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	content := "foo bar foo baz foo"
@@ -373,7 +405,9 @@ func TestConflictDetection(t *testing.T) {
 
 	result, _ := tool.Execute(ctx, input)
 	var resp ToolResponse
-	json.Unmarshal([]byte(result), &resp)
+	if err := json.Unmarshal([]byte(result), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
 
 	if !resp.Ok {
 		t.Fatalf("Operation failed: %s", resp.Error)
@@ -402,7 +436,9 @@ func TestPathSecurity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	tool := NewEditTool(tempDir)
 	ctx := context.Background()
@@ -423,7 +459,9 @@ func TestPathSecurity(t *testing.T) {
 
 		result, _ := tool.Execute(ctx, input)
 		var resp ToolResponse
-		json.Unmarshal([]byte(result), &resp)
+		if err := json.Unmarshal([]byte(result), &resp); err != nil {
+			t.Fatalf("Failed to unmarshal response: %v", err)
+		}
 
 		if resp.Ok {
 			t.Errorf("Expected security error for path %s, but operation succeeded", path)
@@ -437,7 +475,9 @@ func TestJSONOutputFormat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		_ = os.RemoveAll(tempDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	testFile := filepath.Join(tempDir, "test.txt")
 	if err := os.WriteFile(testFile, []byte("content"), 0644); err != nil {

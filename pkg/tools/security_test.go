@@ -130,7 +130,9 @@ func TestDefaultSecurityValidator_ValidatePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	validator := NewSecurityValidator(tmpDir)
 
@@ -179,8 +181,12 @@ func TestDefaultSecurityValidator_ValidatePath(t *testing.T) {
 
 	// Change to test directory for relative path tests
 	oldDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldDir)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("Failed to change directory: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(oldDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -198,7 +204,9 @@ func TestDefaultSecurityValidator_CheckPermission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	validator := NewSecurityValidator(tmpDir)
 
@@ -386,7 +394,9 @@ func TestPathSanitizer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	sanitizer := NewPathSanitizer(tmpDir)
 
@@ -445,7 +455,9 @@ func TestValidatePath_WithSymlinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	validator := NewSecurityValidator(tmpDir)
 
@@ -454,7 +466,9 @@ func TestValidatePath_WithSymlinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(outsideDir)
+	defer func() {
+		_ = os.RemoveAll(outsideDir) // Non-critical error, can be ignored in cleanup
+	}()
 
 	outsideFile := filepath.Join(outsideDir, "secret.txt")
 	if err := os.WriteFile(outsideFile, []byte("secret"), 0644); err != nil {

@@ -107,7 +107,9 @@ func runInteractiveLoop(ctx context.Context, a *agent.Agent) {
 		fmt.Printf("Error creating readline: %v\n", err)
 		return
 	}
-	defer rl.Close()
+	defer func() {
+		_ = rl.Close() // Non-critical error, can be ignored in cleanup
+	}()
 
 	for {
 		select {

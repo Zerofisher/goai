@@ -367,8 +367,12 @@ func TestContext_ProjectAnalysis(t *testing.T) {
 	goFile := filepath.Join(tempDir, "test.go")
 	pyFile := filepath.Join(tempDir, "test.py")
 
-	os.WriteFile(goFile, []byte("package main"), 0644)
-	os.WriteFile(pyFile, []byte("print('hello')"), 0644)
+	if err := os.WriteFile(goFile, []byte("package main"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+	if err := os.WriteFile(pyFile, []byte("print('hello')"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
 
 	ctx := NewContext(tempDir)
 	projectInfo := ctx.GetProjectInfo()
@@ -410,7 +414,7 @@ func TestBuilder(t *testing.T) {
 	}
 
 	if agent == nil {
-		t.Error("Builder.Build() returned nil agent")
+		t.Fatal("Builder.Build() returned nil agent")
 	}
 
 	if agent.config.Model.Provider != "mock" {

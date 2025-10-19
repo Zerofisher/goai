@@ -203,10 +203,9 @@ func (t *EditTool) Execute(ctx context.Context, input map[string]interface{}) (s
 	}
 
 	// If conflicts detected, warn but don't fail
-	if len(conflicts) > 0 {
-		// Could optionally fail here if a "fail_on_conflict" flag is set
-		// For now, just include conflicts in the response
-	}
+	// Could optionally fail here if a "fail_on_conflict" flag is set
+	// For now, conflicts are just included in the response
+	_ = conflicts // Conflicts are currently not used but may be in future
 
 	// Execute the strategy
 	result, err := strategyImpl.Execute(absPath, input)

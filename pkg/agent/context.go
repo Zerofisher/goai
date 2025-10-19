@@ -219,7 +219,7 @@ func (c *Context) detectLanguage() string {
 	// Simple language detection based on file extensions
 	langCounts := make(map[string]int)
 
-	filepath.Walk(c.workDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(c.workDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
@@ -271,7 +271,7 @@ func (c *Context) detectLanguage() string {
 
 // walkProject walks the project directory and collects statistics
 func (c *Context) walkProject(info *ProjectInfo) {
-	filepath.Walk(c.workDir, func(path string, fileInfo os.FileInfo, err error) error {
+	_ = filepath.Walk(c.workDir, func(path string, fileInfo os.FileInfo, err error) error {
 		if err != nil {
 			return nil
 		}
