@@ -158,7 +158,7 @@ func (c *Context) generateSystemPrompt() string {
 	parts = append(parts, "1. Always validate file paths and ensure they are within the working directory")
 	parts = append(parts, "2. Provide clear explanations for your actions")
 	parts = append(parts, "3. Handle errors gracefully and suggest alternatives")
-	parts = append(parts, "4. Use appropriate tools for each task")
+	parts = append(parts, "4. **MUST use appropriate tools for each task - never just describe what should be done**")
 	parts = append(parts, "5. Follow best practices and coding standards")
 	parts = append(parts, "")
 	parts = append(parts, "## Available Tools")
@@ -170,7 +170,10 @@ func (c *Context) generateSystemPrompt() string {
 	parts = append(parts, "- edit_file: Edit specific parts of files")
 	parts = append(parts, "- search: Search for patterns in files")
 	parts = append(parts, "")
-	parts = append(parts, "Use tools when needed to accomplish tasks. Always check the results and handle errors appropriately.")
+	parts = append(parts, "**IMPORTANT**: When asked to create/modify files or run commands, you MUST use the appropriate tools.")
+	parts = append(parts, "DO NOT just return code snippets - actually use write_file tool to create files.")
+	parts = append(parts, "DO NOT just explain commands - actually use bash tool to execute them.")
+	parts = append(parts, "Always check tool execution results and handle errors appropriately.")
 
 	return strings.Join(parts, "\n")
 }
