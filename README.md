@@ -160,13 +160,14 @@ Type your query or command and press Enter.
 
 #### Example 1: Create a Simple Program
 
-````
-> please create a simple Go program that prints "Hello, World!" to the console
+```
+> please create a simple Go program that prints "Hello, World!" to the console and save it as hello.go
 
 [AI creates hello.go file]
 File created: hello.go
 
-```go
+created file: hello.go
+
 package main
 
 import "fmt"
@@ -174,36 +175,31 @@ import "fmt"
 func main() {
     fmt.Println("Hello, World!")
 }
-````
-
 ```
 
 #### Example 2: Create and Run a Program
 
 ```
+> please create a Go program that calculates the Fibonacci sequence up to 10 numbers, save it as fib.go, and run it
 
-> please create a Go program that calculates Fibonacci numbers and run it
-> [AI creates fib.go and runs it]
-> File created: fib.go
-> Running: go run fib.go
-> Output: [0 1 1 2 3 5 8 13 21 34]
-
+[AI creates fib.go and runs it]
+File created: fib.go
+Running: go run fib.go
+Output: [0 1 1 2 3 5 8 13 21 34]
 ```
 
 #### Example 3: Search and Modify Code
 
 ```
-
-> in the current project, search for all TODO comments and help me implement the first one in main.go
+> please search for all TODO comments in the codebase
 
 [AI searches using grep-based search tool]
 Found 5 TODO comments in the codebase...
 
-> help me implement the first TODO in the file main.go
+> please help me implement the first TODO
 
 [AI implements the TODO and updates the file]
-
-````
+```
 
 ### Available Tools
 
@@ -238,7 +234,7 @@ export OPENAI_API_KEY="your-api-key"
 # Optional
 export OPENAI_MODEL="gpt-4"                          # Model to use (default: gpt-4)
 export OPENAI_BASE_URL="https://api.openai.com/v1"  # API endpoint (default: OpenAI)
-````
+```
 
 For advanced configuration, create a `goai.yaml` file in your project directory or `~/.config/goai/config.yaml`:
 
