@@ -1,0 +1,8 @@
+profile: development
+base: base.md
+partials:
+  tool_policy: partials/tool_policy.md
+vars:
+  max_context_tokens: 16000
+  prefer_tdd: true
+  default_test_framework: "go test"

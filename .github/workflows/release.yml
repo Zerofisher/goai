@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.24.x
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Build binaries
+      env:
+        CGO_ENABLED: 0
+      run: |
+        mkdir -p dist
+
+        # Build for Linux amd64
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o dist/goai-linux-amd64 ./cmd/goai
+
+        # Build for Linux arm64
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o dist/goai-linux-arm64 ./cmd/goai
+
+        # Build for macOS amd64
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o dist/goai-darwin-amd64 ./cmd/goai
+
+        # Build for macOS arm64 (Apple Silicon)
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o dist/goai-darwin-arm64 ./cmd/goai
+
+    - name: Create checksums
+      run: |
+        cd dist
+        sha256sum * > checksums.txt
+        cat checksums.txt
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        if [ -f CHANGELOG.md ]; then
+          # Extract changelog for this version
+          awk '/^## \[.*\]/{if(p){exit}; if($0 ~ /\[${{ github.ref_name }}\]/){p=1; next}} p&&/^## \[/{exit} p' CHANGELOG.md > current_changelog.txt
+          if [ -s current_changelog.txt ]; then
+            echo "CHANGELOG_EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "CHANGELOG_EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "CHANGELOG_EXISTS=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/goai-*
+          dist/checksums.txt
+        generate_release_notes: ${{ steps.changelog.outputs.CHANGELOG_EXISTS == 'false' }}
+        body_path: ${{ steps.changelog.outputs.CHANGELOG_EXISTS == 'true' && 'current_changelog.txt' || '' }}
+        draft: false
+        prerelease: ${{ contains(github.ref_name, '-') }}
+        token: ${{ secrets.GITHUB_TOKEN }}
