@@ -67,9 +67,12 @@ An intelligent programming assistant CLI tool built in Go, following the **"Mode
 
 3. **LLM Client** (`pkg/llm/`)
 
-   - OpenAI integration
-   - Claude/Anthropic support
+   - **OpenAI Integration** (`pkg/llm/openai/`): Official OpenAI SDK integration
+   - **Anthropic Integration** (`pkg/llm/anthropic/`): Official Anthropic SDK integration
+   - **Mock Client** (`pkg/llm/mock/`): Testing and development support
+   - Factory pattern for extensible provider support
    - Streaming and non-streaming responses
+   - Tool calling (function calling) support
    - Error handling and retry logic
 
 4. **Message Management** (`pkg/message/`)
@@ -99,7 +102,9 @@ An intelligent programming assistant CLI tool built in Go, following the **"Mode
 ### Prerequisites
 
 - Go 1.24.6 or later
-- OpenAI API key (optional, for LLM features)
+- API key for your chosen LLM provider:
+  - OpenAI API key (for GPT models)
+  - Anthropic API key (for Claude models)
 
 ### Build from Source
 
@@ -114,10 +119,16 @@ go build ./cmd/goai
 
 ### Quick Start
 
-1. **Set up your OpenAI API key** (required for LLM features):
+1. **Set up your API key** (required for LLM features):
 
+For OpenAI:
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
+```
+
+For Anthropic:
+```bash
+export ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
 2. **Build the project**:
@@ -238,10 +249,11 @@ export OPENAI_BASE_URL="https://api.openai.com/v1"  # API endpoint (default: Ope
 
 For advanced configuration, create a `goai.yaml` file in your project directory or `~/.config/goai/config.yaml`:
 
+**OpenAI Configuration:**
 ```yaml
 model:
   provider: "openai"
-  name: "gpt-4"
+  name: "gpt-4.1-mimi"  # or "gpt-4", "gpt-3.5-turbo", etc.
   max_tokens: 16000
   timeout: 60
 
@@ -259,6 +271,28 @@ tools:
     forbidden_commands:
       - "rm -rf /"
       - "mkfs"
+
+output:
+  format: "markdown"
+  colors: true
+  show_spinner: true
+```
+
+**Anthropic Configuration:**
+```yaml
+model:
+  provider: "anthropic"
+  name: "claude-3-7-sonnet-latest"  # or "claude-3-opus-latest", etc.
+  max_tokens: 16000
+  timeout: 60
+
+tools:
+  enabled:
+    - bash
+    - file
+    - edit
+    - search
+    - todo
 
 output:
   format: "markdown"

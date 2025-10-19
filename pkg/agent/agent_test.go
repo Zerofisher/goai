@@ -82,6 +82,14 @@ func (m *MockLLMClient) IsAvailable() bool {
 	return m.available
 }
 
+func (m *MockLLMClient) Provider() string {
+	return "mock"
+}
+
+func (m *MockLLMClient) Close() error {
+	return nil
+}
+
 // Test helper to create a test config
 func createTestConfig(t *testing.T) *config.Config {
 	tempDir := t.TempDir()

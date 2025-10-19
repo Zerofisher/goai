@@ -19,11 +19,15 @@ import (
 	"github.com/Zerofisher/goai/pkg/tools/file"
 	"github.com/Zerofisher/goai/pkg/tools/search"
 	todotool "github.com/Zerofisher/goai/pkg/tools/todo"
+
+	// Import LLM providers to register their factories
+	_ "github.com/Zerofisher/goai/pkg/llm/anthropic"
+	_ "github.com/Zerofisher/goai/pkg/llm/openai"
 )
 
 const (
 	// Version information
-	Version = "0.1.0"
+	Version = "0.2.0"
 	AppName = "GoAI Coder"
 )
 
