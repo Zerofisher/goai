@@ -4,198 +4,248 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GoAI Coder is a reasoning-based programming assistant CLI tool built in Go. It provides intelligent code generation, analysis, and problem-solving capabilities with a focus on context-aware assistance using the Eino framework for AI reasoning chains.
+GoAI Coder is an intelligent programming assistant CLI tool built in Go, following the **"Model as Agent"** philosophy - where the LLM is the intelligent agent and code provides simple, focused tools.
 
-## Architecture
+**Current Status**: Production-ready with 55.4% test coverage. Successfully refactored to mini-kode architecture.
 
-### Core Components
-- **cmd/goai**: Main CLI entry point using Cobra framework with commands: think, plan, analyze, fix
-- **internal/reasoning**: Eino-based reasoning engine with four main chains (analysis, planning, execution, validation)
-- **pkg/indexing**: Comprehensive codebase indexing and search system with SQLite FTS5
-- **pkg/types**: Core data models and interfaces for the entire system
-- **pkg/context**: Project context management, Git integration, and file watching
-- **pkg/errors**: Error handling and recovery utilities with custom error types
+## Project Information
 
-### Key Architectural Patterns
-- **Chain-based Reasoning**: Uses Eino framework for sequential AI reasoning operations
-- **Interface-driven Design**: Core functionality defined through interfaces (ReasoningEngine, ContextManager, CodeGenerator, Validator)
-- **Modular Indexing**: Pluggable indexing system supporting multiple backends (currently FTS5, designed for vector embeddings)
-- **Context-Aware Processing**: Deep integration with project context, Git history, and file changes
+- **Go Version**: 1.24.6 (specified in go.mod)
+- **Main Branch**: `refactor/mini-kode-architecture`
+- **Test Coverage**: 55.4% overall
+- **Dependencies**: Minimal - `gopkg.in/yaml.v3` for configuration, `github.com/chzyer/readline` for interactive input
 
 ## Development Commands
 
-**Build:**
+### Build and Run
+
 ```bash
 go build ./cmd/goai                    # Build main CLI
-go build ./cmd/indexing-example        # Build indexing system demo
+./goai --help                          # Show help
+./goai                                 # Interactive mode (requires OPENAI_API_KEY)
 ```
 
-**Run tests:**
-```bash
-go test ./...                          # Run all tests (note: some may fail without valid test setup)
-go test -v ./pkg/indexing              # Run indexing system tests
-go test -v ./internal/reasoning        # Run reasoning engine tests
-go test ./pkg/context ./pkg/types ./pkg/errors  # Run core package tests
-```
+### Testing
 
-**Test with coverage:**
 ```bash
+# Run all tests
+go test ./...
+
+# Run with coverage (current: 55.4%)
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out -o coverage.html
+
+# Test specific packages
+go test -v ./pkg/tools/search          # Search tool (80.9% coverage)
+go test -v ./pkg/agent                 # Agent (63.3% coverage)
+go test -v ./pkg/todo                  # Todo system (89.4% coverage)
+
+# Run single test
+go test -v ./pkg/tools/search -run TestSearchTool
+
+# Test with race detection
+go test -race ./pkg/tools
 ```
 
-**Run CLI and examples:**
+### Code Quality
+
 ```bash
-./goai --help                          # Show help
-go run ./cmd/goai think "Create a REST API"  # Problem analysis (placeholder)
-go run ./cmd/indexing-example          # Demo indexing system
-go run ./examples/full_reasoning_chain.go  # Complete reasoning chain demo
-```
-
-**Test reasoning chains (requires OpenAI API key):**
-```bash
-export OPENAI_API_KEY="your-key"
-export OPENAI_MODEL_NAME="gpt-4"       # Optional, defaults to gpt-4
-go test ./internal/reasoning/ -v -run TestEngine_AnalyzeProblem_ValidKey
-```
-
-**Code Quality Checks:**
-```bash
-golangci-lint run                      # Run all linters (comprehensive)
-golangci-lint run ./pkg/indexing       # Run linters on specific package
-golangci-lint run --fix                # Auto-fix issues where possible
-go vet ./...                           # Basic static analysis
-```
-
-## Core Systems
-
-### Reasoning Engine (internal/reasoning)
-Four-chain Eino-based system for AI-powered code assistance:
-- **Analysis Chain**: Problem domain analysis, technical stack identification, risk assessment
-- **Planning Chain**: Detailed execution plans with dependencies and timelines  
-- **Execution Chain**: Working Go code generation with tests and documentation
-- **Validation Chain**: Code quality analysis and compliance checking
-
-All chains include fallback mechanisms for when LLM responses can't be parsed as JSON.
-
-### Indexing System (pkg/indexing)  
-Complete multi-modal codebase indexing and search system:
-- **File Discovery**: Smart filtering with .gitignore support and language detection
-- **Document Chunking**: Intelligent segmentation respecting code boundaries (functions, classes)
-- **Full-Text Search**: SQLite FTS5 with BM25 ranking (`fts_index.go`)
-- **Symbol Indexing**: Go AST parser for functions, types, variables (`symbol_index.go`, `treesitter_parser.go`)
-- **Semantic Search**: Vector embeddings with OpenAI integration (`embedding_index.go`, `embedding_provider.go`)
-- **Specialized Retrievers**: FTS, semantic, symbol, recent files retrievers (`retrievers.go`)
-- **Hybrid Pipeline**: Parallel execution with intelligent reranking (`reranker.go`)
-- **Enhanced Manager**: Unified interface for all search capabilities (`enhanced_manager.go`)
-- **Index Management**: Concurrent operations, incremental updates, status monitoring
-
-### Context Management (pkg/context)
-Project-aware context system:
-- **Git Integration**: Branch tracking, commit history, change detection
-- **File Watching**: Real-time file system monitoring
-- **Project Structure Analysis**: Dependency mapping and architecture evaluation
-- **Configuration Loading**: GOAI.md file parsing for project-specific settings
-
-## Environment Requirements
-
-**Required for reasoning chains:**
-```bash
-export OPENAI_API_KEY="your-api-key"
-export OPENAI_MODEL_NAME="gpt-4"  # Optional, defaults to gpt-4
-```
-
-**Dependencies:**
-- Go 1.24.6+
-- SQLite (for indexing)
-- OpenAI API access (for reasoning)
-
-## Current Implementation Status
-
-**✅ Complete:**
-- Project foundation and core interfaces
-- Data models and validation
-- Context management system  
-- Eino-based reasoning chains with OpenAI integration
-- **Complete multi-modal indexing system**:
-  - Full-text search with SQLite FTS5
-  - Symbol indexing with Go AST parser  
-  - Vector embeddings with OpenAI integration
-  - Specialized retrievers (FTS, semantic, symbol, recent files)
-  - Hybrid retrieval pipeline with intelligent reranking
-  - Enhanced index manager with unified API
-
-**🚧 In Progress/Placeholder:**
-- CLI command implementations (skeleton exists) 
-- Tool system for file operations
-- Vector embedding support in indexing
-- Parallel processing with Eino Graphs
-
-## Development Workflow
-
-**Full Quality Check Pipeline:**
-```bash
-# 1. Run tests with coverage
-go test -coverprofile=coverage.out ./...
-
-# 2. Check code quality
+# Run comprehensive linter
 golangci-lint run
 
-# 3. Verify build
-go build ./cmd/goai
+# Auto-fix issues
+golangci-lint run --fix
 
-# 4. Generate coverage report (optional)
-go tool cover -html=coverage.out -o coverage.html
-```
-
-**Pre-commit Quality Gate:**
-```bash
-# Quick quality check before committing
+# Full quality check (pre-commit)
 go test ./... && golangci-lint run && go build ./cmd/goai
 ```
 
-## Development Tips
+## Architecture
 
-**Key Interface Locations:**
-- Core interfaces defined in `pkg/types/interfaces.go`
-- Reasoning engine interface: `ReasoningEngine` with 4-chain methods
-- Context management: `ContextManager` for project context and Git integration
-- Indexing: `CodebaseIndexer` for file discovery and search
+### High-Level Structure
 
-**Important Implementation Details:**
-- Context manager creates `.goai/` directory with multiple index databases:
-  - `fts_index.db`: SQLite FTS5 for full-text search
-  - `symbol_index.db`: SQLite for symbol indexing  
-  - `embedding_index.db`: SQLite for vector embeddings
-- Enhanced index manager (`EnhancedIndexManager`) provides unified access to all search types
-- Reasoning chains include JSON parsing fallbacks for robustness
-- File filtering respects `.gitignore` patterns automatically
-
-**Code Quality Standards:**
-- All code must pass `golangci-lint run` with 0 issues
-- Maintain test coverage above 60% for core packages (`pkg/indexing`, `pkg/context`, `pkg/types`)
-- Use proper error handling with `defer func() { _ = resource.Close() }()` pattern for non-critical errors
-- Follow Go best practices: interfaces in consumer packages, concrete types in provider packages
-- All indexes support concurrent operations with proper mutex locking
-- Vector embeddings use Eino's OpenAI integration with fallback to mock provider
-- Hybrid retrieval combines multiple retrievers with intelligent reranking
-
-**Running Individual Components:**
-```bash
-# Test enhanced indexing system
-go run ./cmd/indexing-example
-
-# Test all indexing functionality
-go test ./pkg/indexing -v
-
-# Test specific indexing components
-go test ./pkg/indexing -v -run TestEnhancedIndexManager
-go test ./pkg/indexing -v -run TestEmbeddingProvider
-go test ./pkg/indexing -v -run TestRetrievers
-
-# Run single test file
-go test ./pkg/context -v -run TestContextManager
-
-# Test with race detection
-go test -race ./pkg/indexing
 ```
+User Input → Agent (Main Loop) → LLM Client → Tool Dispatcher → Output
+                                      ↓
+                              Message Management
+```
+
+### Core Components
+
+1. **Agent System** (`pkg/agent/`)
+   - Main loop orchestration with **multi-round tool call support** (up to 10 rounds)
+   - Message history management with token limits
+   - LLM interaction coordination
+   - State management
+
+2. **Tool System** (`pkg/tools/`)
+   - **Interface**: All tools implement 5 methods: `Name()`, `Description()`, `InputSchema()`, `Execute()`, `Validate()`
+   - **File Operations** (`pkg/tools/file/`): Read, write, list with security validation
+   - **Bash Execution** (`pkg/tools/bash/`): Safe command execution with timeout and filtering
+   - **File Editing** (`pkg/tools/edit/`): Text replacement, insertion, deletion with backups
+   - **Code Search** (`pkg/tools/search/`): Grep-based search with caching (80.9% coverage)
+   - **Todo Management** (`pkg/tools/todo/`): Task tracking and progress monitoring
+   - **Security**: Path validation, command filtering via `SecurityValidator`
+
+3. **LLM Client** (`pkg/llm/`)
+   - OpenAI integration with factory pattern
+   - Support for streaming and non-streaming responses
+   - Error handling and retry logic
+
+4. **Message Management** (`pkg/message/`)
+   - Message history with token limits
+   - Content formatting and normalization
+
+5. **Configuration** (`pkg/config/`)
+   - YAML/JSON-based configuration
+   - Environment variable support with expansion
+   - Validation and defaults
+
+6. **Todo System** (`pkg/todo/`)
+   - Task management with status tracking (pending, in_progress, completed)
+   - Progress rendering with colors
+   - Constraints: max 20 items, 1 in-progress at a time
+
+7. **Reminder System** (`pkg/reminder/`)
+   - Periodic reminders for Todo usage
+   - Non-intrusive message injection
+
+## Key Implementation Details
+
+### Multi-Round Tool Calls
+
+The agent supports **multiple rounds** of tool calls per query (up to 10 rounds):
+- LLM can chain tool calls: `list_files` → `read_file` → return analysis
+- Each round executes tools, adds results to message history, and requests next LLM response
+- Loop continues until LLM returns text response or max rounds reached
+- Location: `pkg/agent/agent.go:117-143`
+
+### Tool Registration
+
+Tools are registered in `cmd/goai/main.go:registerTools()`:
+- Each tool is created with appropriate configuration
+- Registered with the dispatcher's registry
+- Tool definitions automatically provided to LLM via `agent.getToolDefinitions()`
+
+### Interactive Input
+
+Uses `readline` library for enhanced terminal input:
+- UTF-8 support
+- Arrow key navigation and history
+- Command history saved to `/tmp/.goai_history`
+- Special commands: `/help`, `/stats`, `/clear`, `/reset`, `/exit`
+
+### Security Model
+
+- **Path Validation**: All file paths validated against work directory, no `..` traversal
+- **Command Filtering**: Bash tool blocks dangerous commands (`rm -rf /`, `mkfs`, etc.)
+- **Resource Limits**: File size (10MB), output (100K chars), timeout (30s), parallel tools (5)
+
+## Module-Specific Notes
+
+### Areas Needing Test Coverage Improvement
+
+**High Priority** (below target coverage):
+- `pkg/dispatcher/`: 0.0% - Critical infrastructure, needs comprehensive tests
+- `pkg/tools/todo/`: 31.4% - Core functionality, target >70%
+- `pkg/message/`: 30.4% - Message management needs better coverage
+- `pkg/llm/`: 38.4% - LLM integration should be well-tested
+
+**Well-Tested** (meeting/exceeding targets):
+- `pkg/types/`: 97.0% ✅
+- `pkg/reminder/`: 91.1% ✅
+- `pkg/todo/`: 89.4% ✅
+- `pkg/tools/search/`: 80.9% ✅
+- `pkg/config/`: 78.9% ✅
+
+## Common Patterns
+
+### Adding a New Tool
+
+1. Create file in `pkg/tools/<toolname>/`
+2. Implement Tool interface (5 methods)
+3. Add comprehensive tests (target >70% coverage)
+4. Register in `cmd/goai/main.go:registerTools()`
+5. Run quality checks: `golangci-lint run ./pkg/tools/<toolname>/`
+
+Example tool structure:
+```go
+type MyTool struct {
+    workDir string
+}
+
+func NewMyTool(workDir string) *MyTool {
+    return &MyTool{workDir: workDir}
+}
+
+func (t *MyTool) Name() string { return "my_tool" }
+func (t *MyTool) Description() string { return "Does something useful" }
+func (t *MyTool) InputSchema() map[string]interface{} { /* ... */ }
+func (t *MyTool) Execute(ctx context.Context, input map[string]interface{}) (string, error) { /* ... */ }
+func (t *MyTool) Validate(input map[string]interface{}) error { /* ... */ }
+```
+
+## Environment Setup
+
+**Required for LLM features:**
+```bash
+export OPENAI_API_KEY="your-api-key"
+export OPENAI_MODEL="gpt-4"  # Optional, defaults to gpt-4
+```
+
+**Configuration files** (optional, checked in order):
+- `goai.yaml` or `goai.yml` (current directory)
+- `.goai.yaml` or `.goai.yml` (current directory)
+- `~/.config/goai/config.yaml`
+
+## Important Constraints
+
+1. **No Over-Engineering**: Keep implementations simple. The model is smart; code should just provide tools.
+2. **Test First**: Use TDD approach where appropriate. Tests drive design.
+3. **Security First**: All file operations must validate paths, all commands must be checked.
+4. **Interface Driven**: Define interfaces in consumer packages, implementations in provider packages.
+5. **Concurrent Safe**: Use mutexes for shared state, design for concurrent access.
+
+## Code Quality Standards
+
+**Mandatory Requirements:**
+- All code must pass `golangci-lint run` with 0 issues
+- Test coverage: Core packages >80%, Tool packages >70%
+- All exported types, functions, methods must have documentation comments
+- Error handling: Never ignore errors, use `fmt.Errorf` with `%w` for wrapping
+
+**Error Handling Pattern:**
+```go
+// ✅ Good
+func ReadFile(path string) ([]byte, error) {
+    if err := ValidatePath(path); err != nil {
+        return nil, fmt.Errorf("invalid path: %w", err)
+    }
+    data, err := os.ReadFile(path)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read file %s: %w", path, err)
+    }
+    return data, nil
+}
+```
+
+**File Close Pattern:**
+```go
+file, err := os.Open(path)
+if err != nil {
+    return err
+}
+defer func() {
+    _ = file.Close() // Non-critical error, can be ignored with comment
+}()
+```
+
+## GitHub Actions
+
+Release workflow (`.github/workflows/release.yml`) builds for:
+- Linux amd64
+- Linux arm64
+- macOS amd64 (Intel)
+- macOS arm64 (Apple Silicon)
+
+Triggered by pushing version tags: `git tag v0.1.0 && git push origin v0.1.0`
