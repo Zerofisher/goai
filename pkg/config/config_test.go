@@ -15,8 +15,8 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Default provider = %s, want openai", cfg.Model.Provider)
 	}
 
-	if cfg.Model.Name != "gpt-4" {
-		t.Errorf("Default model name = %s, want gpt-4", cfg.Model.Name)
+	if cfg.Model.Name != "gpt-4.1-mini" {
+		t.Errorf("Default model name = %s, want gpt-4.1-mini", cfg.Model.Name)
 	}
 
 	if cfg.Model.MaxTokens != 16000 {
