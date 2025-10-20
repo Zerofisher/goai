@@ -31,7 +31,7 @@ func TestNewClient(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty model defaults to gpt-4.1-mimi",
+			name: "empty model defaults to gpt-4.1-mini",
 			config: llm.ClientConfig{
 				Provider: "openai",
 				APIKey:   "test-key",
@@ -53,8 +53,8 @@ func TestNewClient(t *testing.T) {
 					return
 				}
 				// Check default model
-				if tt.config.Model == "" && client.GetModel() != "gpt-4.1-mimi" {
-					t.Errorf("Expected default model gpt-4.1-mimi, got %s", client.GetModel())
+				if tt.config.Model == "" && client.GetModel() != "gpt-4.1-mini" {
+					t.Errorf("Expected default model gpt-4.1-mini, got %s", client.GetModel())
 				}
 			}
 		})

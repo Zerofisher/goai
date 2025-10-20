@@ -85,13 +85,18 @@ type TodoConfig struct {
 
 // OutputConfig contains output formatting configuration.
 type OutputConfig struct {
-	MaxChars      int    `yaml:"max_chars" json:"max_chars"`           // Maximum output characters
-	Format        string `yaml:"format" json:"format"`                 // Output format: "markdown", "plain"
-	Colors        bool   `yaml:"colors" json:"colors"`                 // Enable colored output
-	ShowTimestamp bool   `yaml:"show_timestamp" json:"show_timestamp"` // Show timestamps
-	CodeTheme     string `yaml:"code_theme" json:"code_theme"`         // Syntax highlighting theme
-	WrapLines     bool   `yaml:"wrap_lines" json:"wrap_lines"`         // Wrap long lines
-	ShowSpinner   bool   `yaml:"show_spinner" json:"show_spinner"`     // Show spinner during processing
+	MaxChars           int    `yaml:"max_chars" json:"max_chars"`                         // Maximum output characters
+	Format             string `yaml:"format" json:"format"`                               // Output format: "markdown", "plain"
+	Colors             bool   `yaml:"colors" json:"colors"`                               // Enable colored output
+	ShowTimestamp      bool   `yaml:"show_timestamp" json:"show_timestamp"`               // Show timestamps
+	CodeTheme          string `yaml:"code_theme" json:"code_theme"`                       // Syntax highlighting theme
+	WrapLines          bool   `yaml:"wrap_lines" json:"wrap_lines"`                       // Wrap long lines
+	ShowSpinner        bool   `yaml:"show_spinner" json:"show_spinner"`                   // Show spinner during processing
+	ShowToolEvents     bool   `yaml:"show_tool_events" json:"show_tool_events"`           // Show tool execution events
+	ToolEventDetail    string `yaml:"tool_event_detail" json:"tool_event_detail"`         // Tool event detail level: "compact", "full"
+	ToolOutputMaxLines int    `yaml:"tool_output_max_lines" json:"tool_output_max_lines"` // Maximum tool output lines
+	ToolOutputMaxChars int    `yaml:"tool_output_max_chars" json:"tool_output_max_chars"` // Maximum tool output characters
+	ToolOutputFormat   string `yaml:"tool_output_format" json:"tool_output_format"`       // Tool output format: "auto", "plain", "json"
 }
 
 // DefaultConfig returns a default configuration.
@@ -100,7 +105,7 @@ func DefaultConfig() *Config {
 		Model: ModelConfig{
 			Provider:  "openai",
 			Name:      "gpt-4.1-mini",
-			APIKey:    "${OPENAI_API_KEY}", // Use environment variable by default
+			APIKey:    "${OPENAI_API_KEY}",
 			MaxTokens: 16000,
 			Timeout:   60,
 		},
@@ -151,13 +156,18 @@ func DefaultConfig() *Config {
 			ShowProgress:       true,
 		},
 		Output: OutputConfig{
-			MaxChars:      100000,
-			Format:        "markdown",
-			Colors:        true,
-			ShowTimestamp: false,
-			CodeTheme:     "monokai",
-			WrapLines:     true,
-			ShowSpinner:   true,
+			MaxChars:           100000,
+			Format:             "markdown",
+			Colors:             true,
+			ShowTimestamp:      false,
+			CodeTheme:          "monokai",
+			WrapLines:          true,
+			ShowSpinner:        true,
+			ShowToolEvents:     true,
+			ToolEventDetail:    "compact",
+			ToolOutputMaxLines: 200,
+			ToolOutputMaxChars: 20000,
+			ToolOutputFormat:   "auto",
 		},
 		WorkDir: ".",
 		Debug:   false,
@@ -337,6 +347,27 @@ func (c *Config) Validate() error {
 
 	if c.Output.Format == "" {
 		c.Output.Format = "markdown"
+	}
+
+	// Validate tool event configuration
+	if c.Output.ToolEventDetail == "" {
+		c.Output.ToolEventDetail = "compact"
+	} else if c.Output.ToolEventDetail != "compact" && c.Output.ToolEventDetail != "full" {
+		c.Output.ToolEventDetail = "compact" // Default to compact if invalid
+	}
+
+	if c.Output.ToolOutputMaxLines <= 0 {
+		c.Output.ToolOutputMaxLines = 200
+	}
+
+	if c.Output.ToolOutputMaxChars <= 0 {
+		c.Output.ToolOutputMaxChars = 20000
+	}
+
+	if c.Output.ToolOutputFormat == "" {
+		c.Output.ToolOutputFormat = "auto"
+	} else if c.Output.ToolOutputFormat != "auto" && c.Output.ToolOutputFormat != "plain" && c.Output.ToolOutputFormat != "json" {
+		c.Output.ToolOutputFormat = "auto" // Default to auto if invalid
 	}
 
 	// Validate work directory

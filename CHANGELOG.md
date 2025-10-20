@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking**: Replaced custom HTTP implementation with official SDKs
 - **API**: Updated `llm.Client` interface for better provider abstraction
 - **Configuration**: Enhanced config support for multiple providers
-- **Default Model**: OpenAI default model changed to `gpt-4.1-mimi`
+- **Default Model**: OpenAI default model changed to `gpt-4.1-mini`
 - **Dependencies**:
   - Added `github.com/openai/openai-go/v2 v2.7.1`
   - Added `github.com/anthropics/anthropic-sdk-go v1.14.0`
@@ -98,7 +98,7 @@ model:
 ```yaml
 model:
   provider: "openai" # or "anthropic"
-  name: "gpt-4.1-mimi" # for OpenAI
+  name: "gpt-4.1-mini" # for OpenAI
   # name: "claude-3-7-sonnet-latest"  # for Anthropic
 ```
 

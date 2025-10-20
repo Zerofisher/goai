@@ -210,6 +210,15 @@ func convertAssistantResponseMessage(msg openaisdk.ChatCompletionMessage) types.
 		}
 	}
 
+	// Ensure message has at least one content element
+	// This handles edge cases where LLM returns empty response
+	if len(message.Content) == 0 {
+		message.Content = append(message.Content, types.Content{
+			Type: "text",
+			Text: " ", // Single space to satisfy validation
+		})
+	}
+
 	return message
 }
 

@@ -223,6 +223,15 @@ func convertAnthropicMessage(message *anthropicsdk.Message) types.Message {
 		}
 	}
 
+	// Ensure message has at least one content element
+	// This handles edge cases where LLM returns empty response
+	if len(msg.Content) == 0 {
+		msg.Content = append(msg.Content, types.Content{
+			Type: "text",
+			Text: " ", // Single space to satisfy validation
+		})
+	}
+
 	return msg
 }
 

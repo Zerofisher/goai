@@ -122,11 +122,13 @@ go build ./cmd/goai
 1. **Set up your API key** (required for LLM features):
 
 For OpenAI:
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
 For Anthropic:
+
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
 ```
@@ -166,6 +168,36 @@ Type your query or command and press Enter.
 
 >
 ```
+
+### TUI (Bubble Tea)
+
+GoAI includes a full-screen TUI built with Bubble Tea. It shows assistant replies and real-time tool events side by side.
+
+- Run
+  - Default: `./goai` launches the TUI.
+  - Fallback legacy prompt: set `GOAI_LEGACY_UI=1` to use the old readline interface.
+
+- Layout
+  - Left panel: conversation (assistant/user), with streaming updates.
+  - Right panel: tool events and outputs (started/succeeded/failed with truncated output).
+  - Bottom: input line; top/right: spinner status (e.g., “Running bash…”, “Thinking…”).
+
+- Keys
+  - `Enter`: send the current input
+  - `Esc`: cancel the current request
+  - `Ctrl+C`: quit
+
+- Tool Events
+  - Tools executed by the agent emit events in real time:
+    - started: tool name and sanitized arguments
+    - succeeded: duration + output (long output truncated)
+    - failed: error message
+  - Events do not alter conversation history; they are for visibility only.
+
+- Configuration (optional)
+  - Configure model/provider via `goai.yaml` or env vars (see below).
+  - Tool event output length is limited internally to keep the UI responsive.
+  - To force the legacy prompt temporarily: `GOAI_LEGACY_UI=1 ./goai`.
 
 ### Usage Examples
 
@@ -250,10 +282,11 @@ export OPENAI_BASE_URL="https://api.openai.com/v1"  # API endpoint (default: Ope
 For advanced configuration, create a `goai.yaml` file in your project directory or `~/.config/goai/config.yaml`:
 
 **OpenAI Configuration:**
+
 ```yaml
 model:
   provider: "openai"
-  name: "gpt-4.1-mimi"  # or "gpt-4", "gpt-3.5-turbo", etc.
+  name: "gpt-4.1-mini" # or "gpt-4", "gpt-3.5-turbo", etc.
   max_tokens: 16000
   timeout: 60
 
@@ -279,10 +312,11 @@ output:
 ```
 
 **Anthropic Configuration:**
+
 ```yaml
 model:
   provider: "anthropic"
-  name: "claude-3-7-sonnet-latest"  # or "claude-3-opus-latest", etc.
+  name: "claude-3-7-sonnet-latest" # or "claude-3-opus-latest", etc.
   max_tokens: 16000
   timeout: 60
 

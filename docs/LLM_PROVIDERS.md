@@ -48,25 +48,27 @@ The LLM integration follows a factory pattern with official SDK wrappers:
 ### Configuration
 
 **Environment Variables:**
+
 ```bash
 export OPENAI_API_KEY="your-api-key"
-export OPENAI_MODEL="gpt-4.1-mimi"  # Default model
+export OPENAI_MODEL="gpt-4.1-mini"  # Default model
 ```
 
 **Configuration File (goai.yaml):**
+
 ```yaml
 model:
   provider: "openai"
-  api_key: "${OPENAI_API_KEY}"  # Can use env variable
-  name: "gpt-4.1-mimi"
-  base_url: "https://api.openai.com/v1"  # Optional
+  api_key: "${OPENAI_API_KEY}" # Can use env variable
+  name: "gpt-4.1-mini"
+  base_url: "https://api.openai.com/v1" # Optional
   max_tokens: 16000
   timeout: 60
 ```
 
 ### Available Models
 
-- `gpt-4.1-mimi` (default)
+- `gpt-4.1-mini` (default)
 - `gpt-4`
 - `gpt-4-turbo`
 - `gpt-3.5-turbo`
@@ -83,7 +85,7 @@ import (
 config := llm.ClientConfig{
     Provider: "openai",
     APIKey:   os.Getenv("OPENAI_API_KEY"),
-    Model:    "gpt-4.1-mimi",
+    Model:    "gpt-4.1-mini",
     Timeout:  30 * time.Second,
 }
 
@@ -119,17 +121,19 @@ resp, err := client.CreateMessage(ctx, llm.MessageRequest{
 ### Configuration
 
 **Environment Variables:**
+
 ```bash
 export ANTHROPIC_API_KEY="your-api-key"
 ```
 
 **Configuration File (goai.yaml):**
+
 ```yaml
 model:
   provider: "anthropic"
-  api_key: "${ANTHROPIC_API_KEY}"  # Can use env variable
+  api_key: "${ANTHROPIC_API_KEY}" # Can use env variable
   name: "claude-3-7-sonnet-latest"
-  base_url: "https://api.anthropic.com"  # Optional
+  base_url: "https://api.anthropic.com" # Optional
   max_tokens: 16000
   timeout: 60
 ```
@@ -303,6 +307,7 @@ BenchmarkToolDefinitionConversion-12     8660696       131.3 ns/op
 ```
 
 Run benchmarks:
+
 ```bash
 go test -bench=. -benchmem ./pkg/llm/
 ```

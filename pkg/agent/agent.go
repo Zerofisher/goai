@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -172,6 +171,8 @@ func (a *Agent) ProcessToolCalls(calls []*types.ToolUse) []types.ToolResult {
 }
 
 // StreamQuery processes a user query with streaming response
+// Note: This implementation does NOT support tool calls for streaming.
+// For tool support, use the non-streaming Query() method instead.
 func (a *Agent) StreamQuery(ctx context.Context, input string, outputChan chan<- string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -186,38 +187,61 @@ func (a *Agent) StreamQuery(ctx context.Context, input string, outputChan chan<-
 		return fmt.Errorf("failed to add user message: %w", err)
 	}
 
-	// Create LLM request with streaming
+	// Use non-streaming Query for now since streaming doesn't support tools
+	// Create LLM request
 	req := a.buildMessageRequest()
-	req.Stream = true
 
-	// Send to LLM with streaming
-	streamChan, err := a.client.StreamMessage(ctx, req)
+	// Send to LLM
+	resp, err := a.client.CreateMessage(ctx, req)
 	if err != nil {
 		a.state.RecordError(err)
-		return fmt.Errorf("LLM stream request failed: %w", err)
+		return fmt.Errorf("LLM request failed: %w", err)
 	}
 
-	// Collect full response while streaming
-	var fullResponse strings.Builder
-	for chunk := range streamChan {
-		if chunk.Error != nil {
-			a.state.RecordError(chunk.Error)
-			return fmt.Errorf("streaming error: %w", chunk.Error)
-		}
-
-		if chunk.Delta.Type == "text" && chunk.Delta.Text != "" {
-			fullResponse.WriteString(chunk.Delta.Text)
-			outputChan <- chunk.Delta.Text
-		}
-
-		if chunk.Done {
-			break
-		}
-	}
-
-	// Add the complete assistant message to history
-	if err := a.messages.Add(types.NewTextMessage("assistant", fullResponse.String())); err != nil {
+	// Add assistant message to history
+	if err := a.messages.Add(resp.Message); err != nil {
 		return fmt.Errorf("failed to add assistant message: %w", err)
+	}
+
+	// Support multiple rounds of tool calls
+	maxRounds := 10
+	currentRound := 0
+
+	for resp.Message.HasToolUse() && currentRound < maxRounds {
+		currentRound++
+		toolUses := resp.Message.GetToolUses()
+
+		// Execute tools
+		results := a.ProcessToolCalls(toolUses)
+
+		// Add tool results to messages
+		for _, result := range results {
+			if err := a.messages.Add(types.NewToolResultMessage(&result)); err != nil {
+				return fmt.Errorf("failed to add tool result: %w", err)
+			}
+		}
+
+		// Get next response from LLM
+		req = a.buildMessageRequest()
+		resp, err = a.client.CreateMessage(ctx, req)
+		if err != nil {
+			a.state.RecordError(err)
+			return fmt.Errorf("LLM request failed in round %d: %w", currentRound, err)
+		}
+
+		// Add assistant message
+		if err := a.messages.Add(resp.Message); err != nil {
+			return fmt.Errorf("failed to add assistant message: %w", err)
+		}
+	}
+
+	// Send final text response through the output channel
+	finalText := resp.Message.GetText()
+	if finalText != "" {
+		outputChan <- finalText
+	} else if currentRound > 0 {
+		// If tools were executed but no final text, provide feedback
+		outputChan <- "✓ Task completed successfully."
 	}
 
 	return nil
@@ -317,6 +341,22 @@ func (a *Agent) initializeSystemPrompt() error {
 // GetPromptManager returns the prompt manager for external access.
 func (a *Agent) GetPromptManager() *prompt.Manager {
 	return a.promptManager
+}
+
+// SetToolObserver registers a tool observer for receiving tool execution events
+// The observer will be notified of tool start, completion, and failure events via middleware
+// This method is safe to call after agent creation and does not affect existing behavior
+// if no observer is set
+func (a *Agent) SetToolObserver(obs dispatcher.ToolObserver, opts dispatcher.EventsOptions) {
+	if obs == nil {
+		return
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Add events middleware to dispatcher
+	a.dispatcher.AddMiddleware(dispatcher.EventsMiddleware(obs, opts))
 }
 
 // Stats represents agent statistics

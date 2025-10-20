@@ -10,8 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Zerofisher/goai/cmd/goai/tui"
 	"github.com/Zerofisher/goai/pkg/agent"
 	"github.com/Zerofisher/goai/pkg/config"
+	"github.com/Zerofisher/goai/pkg/dispatcher"
 	"github.com/Zerofisher/goai/pkg/reminder"
 	"github.com/Zerofisher/goai/pkg/todo"
 	"github.com/Zerofisher/goai/pkg/tools/bash"
@@ -19,6 +21,8 @@ import (
 	"github.com/Zerofisher/goai/pkg/tools/file"
 	"github.com/Zerofisher/goai/pkg/tools/search"
 	todotool "github.com/Zerofisher/goai/pkg/tools/todo"
+
+	tea "github.com/charmbracelet/bubbletea"
 
 	// Import LLM providers to register their factories
 	_ "github.com/Zerofisher/goai/pkg/llm/anthropic"
@@ -68,11 +72,18 @@ func main() {
 		fmt.Println()
 	}
 
-	// Print welcome message
-	printWelcome()
+	// Check if we should use legacy interactive mode
+	// Set GOAI_LEGACY_UI=1 to use the old readline-based interface
+	useLegacyUI := os.Getenv("GOAI_LEGACY_UI") == "1"
 
-	// Run interactive loop
-	runInteractiveLoop(ctx, agent)
+	if useLegacyUI {
+		// Use legacy interactive mode
+		printWelcome()
+		runInteractiveLoop(ctx, agent)
+	} else {
+		// Use Bubble Tea TUI
+		runTUI(ctx, agent, cfg)
+	}
 }
 
 // loadConfig loads the configuration from file or environment
@@ -265,4 +276,40 @@ func printHelp() {
 	fmt.Println("  - The agent can help with code generation, debugging, and explanations")
 	fmt.Println("  - Use available tools to read/write files and execute commands")
 	fmt.Println()
+}
+
+// runTUI starts the Bubble Tea TUI interface
+func runTUI(_ context.Context, a *agent.Agent, cfg *config.Config) {
+	// Create TUI model
+	model := tui.New(a, cfg)
+
+	// Create Bubble Tea program
+	p := tea.NewProgram(
+		model,
+		tea.WithAltScreen(),       // Use alternate screen buffer
+		tea.WithMouseCellMotion(), // Enable mouse support
+	)
+
+	// Set program reference in model (for goroutine message sending)
+	model.SetProgram(p)
+
+	// Configure tool observer with events options
+	eventsOpts := dispatcher.EventsOptions{
+		MaxOutputChars: cfg.Output.ToolOutputMaxChars,
+		MaskKeys: []string{
+			"api_key", "apikey", "token", "password", "passwd", "pwd",
+			"secret", "auth", "key", "access_key", "private_key",
+			"authorization", "credential", "credentials",
+		},
+	}
+
+	// Register observer with the agent
+	observer := tui.NewObserver(p)
+	a.SetToolObserver(observer, eventsOpts)
+
+	// Start the program
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error starting TUI: %v\n", err)
+		os.Exit(1)
+	}
 }
