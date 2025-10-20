@@ -35,7 +35,42 @@ const (
 	AppName = "GoAI Coder"
 )
 
+var (
+	// configPaths defines the order in which config files are searched
+	configPaths = []string{
+		"goai.yaml",
+		"goai.yml",
+		".goai.yaml",
+		".goai.yml",
+		filepath.Join(os.Getenv("HOME"), ".config", "goai", "config.yaml"),
+	}
+
+	// interactiveCommands lists all available interactive commands
+	interactiveCommands = []struct {
+		cmd  string
+		desc string
+	}{
+		{"/help, /h", "Show this help message"},
+		{"/clear, /c", "Clear the conversation history"},
+		{"/stats, /s", "Display agent statistics"},
+		{"/reset, /r", "Reset the agent state"},
+		{"/exit, /quit", "Exit the application"},
+	}
+)
+
 func main() {
+	// Handle command-line arguments early (before any initialization)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--help", "-h", "help":
+			printCLIHelp()
+			os.Exit(0)
+		case "--version", "-v", "version":
+			fmt.Printf("%s %s\n", AppName, Version)
+			os.Exit(0)
+		}
+	}
+
 	// Handle graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -88,15 +123,6 @@ func main() {
 
 // loadConfig loads the configuration from file or environment
 func loadConfig() (*config.Config, error) {
-	// Check for config file
-	configPaths := []string{
-		"goai.yaml",
-		"goai.yml",
-		".goai.yaml",
-		".goai.yml",
-		filepath.Join(os.Getenv("HOME"), ".config", "goai", "config.yaml"),
-	}
-
 	var cfg *config.Config
 	for _, path := range configPaths {
 		if _, err := os.Stat(path); err == nil {
@@ -239,6 +265,21 @@ func isToolEnabled(cfg *config.Config, names ...string) bool {
 	return false
 }
 
+// printCommands prints the interactive commands list
+func printCommands(prefix string) {
+	for _, cmd := range interactiveCommands {
+		fmt.Printf("%s%-17s %s\n", prefix, cmd.cmd, cmd.desc)
+	}
+}
+
+// printConfigPaths prints the configuration file search order
+func printConfigPaths(prefix string) {
+	fmt.Println("Config files are searched in order:")
+	for _, path := range configPaths {
+		fmt.Printf("%s- %s\n", prefix, path)
+	}
+}
+
 // printWelcome prints the welcome message
 func printWelcome() {
 	fmt.Println(strings.Repeat("=", 60))
@@ -248,14 +289,34 @@ func printWelcome() {
 	fmt.Println("Welcome to GoAI Coder - Your intelligent programming assistant")
 	fmt.Println()
 	fmt.Println("Available commands:")
-	fmt.Println("  /help    - Show this help message")
-	fmt.Println("  /clear   - Clear the conversation")
-	fmt.Println("  /stats   - Show agent statistics")
-	fmt.Println("  /reset   - Reset the agent state")
-	fmt.Println("  /exit    - Exit the application")
+	printCommands("  ")
 	fmt.Println()
 	fmt.Println("Type your query or command and press Enter.")
 	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println()
+}
+
+// printCLIHelp prints command-line help before initialization
+func printCLIHelp() {
+	fmt.Printf("%s %s - Your intelligent programming assistant\n\n", AppName, Version)
+	fmt.Println("Usage:")
+	fmt.Println("  goai [OPTIONS]")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --help, -h        Show this help message")
+	fmt.Println("  --version, -v     Show version information")
+	fmt.Println()
+	fmt.Println("Environment Variables:")
+	fmt.Println("  OPENAI_API_KEY    OpenAI API key (required)")
+	fmt.Println("  OPENAI_MODEL      Model to use (default: gpt-4)")
+	fmt.Println("  GOAI_LEGACY_UI    Set to '1' to use legacy readline UI")
+	fmt.Println()
+	fmt.Println("Interactive Commands:")
+	printCommands("  ")
+	fmt.Println()
+	fmt.Println("Configuration:")
+	fmt.Print("  ")
+	printConfigPaths("    ")
 	fmt.Println()
 }
 
@@ -265,11 +326,7 @@ func printHelp() {
 	fmt.Println("==================")
 	fmt.Println()
 	fmt.Println("Special Commands:")
-	fmt.Println("  /help, /h     - Show this help message")
-	fmt.Println("  /clear, /c    - Clear the conversation history")
-	fmt.Println("  /stats, /s    - Display agent statistics")
-	fmt.Println("  /reset, /r    - Reset the agent state")
-	fmt.Println("  /exit, /quit  - Exit the application")
+	printCommands("  ")
 	fmt.Println()
 	fmt.Println("Usage Tips:")
 	fmt.Println("  - Type your programming questions or requests naturally")
