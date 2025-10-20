@@ -353,9 +353,10 @@ func TestEventsMiddleware_Concurrent(t *testing.T) {
 	startedCount := 0
 	succeededCount := 0
 	for _, e := range events {
-		if e.Type == types.ToolEventStarted {
+		switch e.Type {
+		case types.ToolEventStarted:
 			startedCount++
-		} else if e.Type == types.ToolEventSucceeded {
+		case types.ToolEventSucceeded:
 			succeededCount++
 		}
 	}

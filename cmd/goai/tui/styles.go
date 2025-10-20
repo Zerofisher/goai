@@ -12,10 +12,6 @@ var (
 	colorSubtle    = lipgloss.Color("#6C7086")
 	colorBorder    = lipgloss.Color("#45475A")
 
-	// Base styles
-	baseStyle = lipgloss.NewStyle().
-			Padding(0, 1)
-
 	// Title styles
 	titleStyle = lipgloss.NewStyle().
 			Foreground(colorPrimary).
