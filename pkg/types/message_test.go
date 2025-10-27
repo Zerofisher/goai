@@ -66,8 +66,8 @@ func TestMessage_NewToolResultMessage(t *testing.T) {
 
 	msg := NewToolResultMessage(toolResult)
 
-	if msg.Role != "user" {
-		t.Errorf("expected role 'user', got '%s'", msg.Role)
+	if msg.Role != "tool" {
+		t.Errorf("expected role 'tool', got '%s'", msg.Role)
 	}
 
 	if len(msg.Content) != 1 {

@@ -48,7 +48,7 @@ func NewToolUseMessage(toolUse *ToolUse) Message {
 // NewToolResultMessage creates a new message with tool result content
 func NewToolResultMessage(toolResult *ToolResult) Message {
 	return Message{
-		Role: "user",
+		Role: "tool",
 		Content: []Content{
 			{
 				Type:       "tool_result",
@@ -101,7 +101,7 @@ func (m *Message) Validate() error {
 		return fmt.Errorf("message role cannot be empty")
 	}
 
-	if m.Role != "user" && m.Role != "assistant" && m.Role != "system" {
+	if m.Role != "user" && m.Role != "assistant" && m.Role != "system" && m.Role != "tool" {
 		return fmt.Errorf("invalid message role: %s", m.Role)
 	}
 

@@ -229,7 +229,7 @@ func TestDefaultSecurityValidator_CheckPermission(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "bash with valid command",
+			name: "bash with valid command - delegated to bash tool validator",
 			tool: "bash",
 			input: map[string]interface{}{
 				"command": "ls -la",
@@ -237,12 +237,12 @@ func TestDefaultSecurityValidator_CheckPermission(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "bash with forbidden command",
+			name: "bash with any command - delegated to bash tool validator",
 			tool: "bash",
 			input: map[string]interface{}{
 				"command": "rm -rf /",
 			},
-			wantErr: true,
+			wantErr: false, // Changed: CheckPermission now delegates to bash tool's own validator
 		},
 		{
 			name: "file_read with valid path",

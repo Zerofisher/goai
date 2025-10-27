@@ -226,9 +226,10 @@ func (v *DefaultSecurityValidator) CheckPermission(tool string, input map[string
 	// Tool-specific permission checks
 	switch tool {
 	case "bash", "shell", "execute":
-		if cmd, ok := input["command"].(string); ok {
-			return v.ValidateCommand(cmd)
-		}
+		// Bash tool has its own comprehensive validator in pkg/tools/bash/validator.go
+		// that handles command validation with more nuanced rules (e.g., allows limited
+		// command chaining). We skip validation here to avoid duplicate/conflicting checks.
+		return nil
 
 	case "file_read", "file_write", "edit":
 		if path, ok := input["path"].(string); ok {
@@ -258,29 +259,42 @@ func (v *DefaultSecurityValidator) CheckPermission(tool string, input map[string
 func containsShellInjection(cmd string) bool {
 	// Check for common injection patterns
 	injectionPatterns := []string{
-		"$(",      // Command substitution
-		"`",       // Backticks for command substitution
-		"&&",      // Command chaining
-		"||",      // Command chaining
-		";",       // Command separator
-		"|",       // Pipe (could be dangerous)
-		"$(IFS",   // IFS manipulation
-		"${IFS",   // IFS manipulation
-		"\n",      // Newline injection
-		"\r",      // Carriage return injection
+		"$(",    // Command substitution
+		"`",     // Backticks for command substitution
+		"$(IFS", // IFS manipulation
+		"${IFS", // IFS manipulation
+		"\r",    // Carriage return injection
 	}
 
 	for _, pattern := range injectionPatterns {
 		if strings.Contains(cmd, pattern) {
-			// Allow some safe patterns
-			if pattern == "|" {
-				// Allow simple pipes like "ls | grep"
-				if !strings.Contains(cmd, "||") && !strings.Contains(cmd, "|&") {
-					continue
-				}
-			}
 			return true
 		}
+	}
+
+	// Check for dangerous command chaining with newlines
+	// Allow \n in quoted strings or heredocs, but not for command injection
+	if strings.Contains(cmd, "\n") {
+		// Simple heuristic: if there are multiple command-like structures, it's suspicious
+		lines := strings.Split(cmd, "\n")
+		if len(lines) > 1 {
+			// Allow heredocs (cat << EOF)
+			if !strings.Contains(cmd, "<<") && !strings.Contains(cmd, "EOF") {
+				return true
+			}
+		}
+	}
+
+	// Check for command chaining and separators (security risk)
+	// Block && (and), || (or), and ; (separator) to prevent command injection
+	if strings.Contains(cmd, "&&") {
+		return true
+	}
+	if strings.Contains(cmd, "||") {
+		return true
+	}
+	if strings.Contains(cmd, ";") {
+		return true
 	}
 
 	return false

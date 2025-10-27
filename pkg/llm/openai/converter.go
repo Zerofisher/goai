@@ -63,10 +63,45 @@ func convertMessages(messages []types.Message) []openaisdk.ChatCompletionMessage
 		case "assistant":
 			toolUses := msg.GetToolUses()
 			if len(toolUses) > 0 {
-				// Assistant message with tool calls - need to use ToParam from actual message
-				// For now, just send text content
+				// Assistant message with tool calls
+				assistantMsg := openaisdk.ChatCompletionAssistantMessageParam{
+					Role: "assistant",
+				}
+
+				// Add text content if present
 				text := msg.GetText()
-				result = append(result, openaisdk.AssistantMessage(text))
+				if text != "" {
+					assistantMsg.Content = openaisdk.ChatCompletionAssistantMessageParamContentUnion{
+						OfString: openaisdk.String(text),
+					}
+				}
+
+				// Convert tool uses to OpenAI format
+				toolCalls := make([]openaisdk.ChatCompletionMessageToolCallUnionParam, 0, len(toolUses))
+				for _, tu := range toolUses {
+					// Convert input map to JSON string
+					argsJSON, err := json.Marshal(tu.Input)
+					if err != nil {
+						// If marshal fails, use an error object
+						argsJSON = []byte(fmt.Sprintf(`{"error": "failed to marshal input: %v"}`, err))
+					}
+
+					toolCall := openaisdk.ChatCompletionMessageToolCallUnionParam{
+						OfFunction: &openaisdk.ChatCompletionMessageFunctionToolCallParam{
+							ID: tu.ID,
+							Function: openaisdk.ChatCompletionMessageFunctionToolCallFunctionParam{
+								Name:      tu.Name,
+								Arguments: string(argsJSON),
+							},
+						},
+					}
+					toolCalls = append(toolCalls, toolCall)
+				}
+				assistantMsg.ToolCalls = toolCalls
+
+				result = append(result, openaisdk.ChatCompletionMessageParamUnion{
+					OfAssistant: &assistantMsg,
+				})
 			} else {
 				text := msg.GetText()
 				result = append(result, openaisdk.AssistantMessage(text))
