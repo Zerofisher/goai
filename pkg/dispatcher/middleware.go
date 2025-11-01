@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Zerofisher/goai/pkg/types"
@@ -150,19 +151,7 @@ func isRetryableError(errorContent string) bool {
 
 // contains checks if a string contains a substring (case-insensitive).
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) &&
-		   (s == substr ||
-		    len(s) > len(substr) &&
-		    (containsHelper(s, substr)))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 // RateLimitMiddleware adds rate limiting to tool execution.
