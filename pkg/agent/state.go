@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -144,7 +145,7 @@ func (s *State) RecordError(err error) {
 	entry := ErrorEntry{
 		Time:    time.Now(),
 		Error:   err,
-		Context: "Round " + string(rune(s.roundCount)),
+		Context: fmt.Sprintf("Round %d", s.roundCount),
 	}
 
 	s.errorLog = append(s.errorLog, entry)

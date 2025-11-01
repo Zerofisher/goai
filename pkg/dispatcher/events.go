@@ -9,6 +9,12 @@ import (
 	"github.com/Zerofisher/goai/pkg/types"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+// retryAttemptKey is the context key for retry attempt number
+const retryAttemptKey contextKey = "retry_attempt"
+
 // ToolObserver defines the interface for observing tool execution events
 type ToolObserver interface {
 	// OnToolEvent is called when a tool event occurs
@@ -196,7 +202,7 @@ func truncateOutput(output string, maxChars int) (string, map[string]interface{}
 // attemptFromContext extracts the retry attempt number from context
 // Returns 1 if not present (first attempt)
 func attemptFromContext(ctx context.Context) int {
-	if attempt, ok := ctx.Value("retry_attempt").(int); ok {
+	if attempt, ok := ctx.Value(retryAttemptKey).(int); ok {
 		return attempt
 	}
 	return 1

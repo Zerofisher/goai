@@ -399,3 +399,117 @@ func TestEventsMiddleware_NilObserver(t *testing.T) {
 		t.Error("Expected successful execution")
 	}
 }
+
+// TestEventsMiddleware_WithRetryAttempt tests retry attempt tracking
+func TestEventsMiddleware_WithRetryAttempt(t *testing.T) {
+	obs := &mockObserver{}
+	opts := DefaultEventsOptions()
+
+	middleware := EventsMiddleware(obs, opts)
+
+	tu := types.ToolUse{
+		ID:   "test-retry",
+		Name: "retry_tool",
+		Input: map[string]interface{}{},
+	}
+
+	next := func(_ context.Context, _ types.ToolUse) types.ToolResult {
+		return types.ToolResult{
+			ToolUseID: tu.ID,
+			Content:   "success",
+			IsError:   false,
+		}
+	}
+
+	// Test with retry_attempt set in context
+	ctx := context.WithValue(context.Background(), retryAttemptKey, 3)
+	middleware(ctx, tu, next)
+
+	events := obs.getEvents()
+	if len(events) != 2 {
+		t.Fatalf("Expected 2 events, got %d", len(events))
+	}
+
+	// Both events should have Attempt = 3
+	if events[0].Attempt != 3 {
+		t.Errorf("Started event: expected Attempt=3, got %d", events[0].Attempt)
+	}
+	if events[1].Attempt != 3 {
+		t.Errorf("Succeeded event: expected Attempt=3, got %d", events[1].Attempt)
+	}
+}
+
+// TestRetryMiddleware_WithEvents tests that retry attempts are propagated to events
+func TestRetryMiddleware_WithEvents(t *testing.T) {
+	obs := &mockObserver{}
+	opts := DefaultEventsOptions()
+
+	// Wrap RetryMiddleware with EventsMiddleware
+	retryMiddleware := RetryMiddleware(2, 0) // 2 retries, no delay
+	eventsMiddleware := EventsMiddleware(obs, opts)
+
+	tu := types.ToolUse{
+		ID:   "test-retry-events",
+		Name: "flaky_tool",
+		Input: map[string]interface{}{},
+	}
+
+	attemptCount := 0
+	next := func(_ context.Context, _ types.ToolUse) types.ToolResult {
+		attemptCount++
+		if attemptCount < 3 {
+			// First two attempts fail with retryable error
+			return types.ToolResult{
+				ToolUseID: tu.ID,
+				Content:   "Error: connection timeout",
+				IsError:   true,
+			}
+		}
+		// Third attempt succeeds
+		return types.ToolResult{
+			ToolUseID: tu.ID,
+			Content:   "success",
+			IsError:   false,
+		}
+	}
+
+	// Chain middlewares: retry wraps events wraps next
+	ctx := context.Background()
+	result := retryMiddleware(ctx, tu, func(ctx context.Context, tu types.ToolUse) types.ToolResult {
+		return eventsMiddleware(ctx, tu, next)
+	})
+
+	// Verify result is success
+	if result.IsError {
+		t.Errorf("Expected success after retries, got error: %s", result.Content)
+	}
+
+	// Verify events
+	events := obs.getEvents()
+	// Should have: started+failed (attempt 1), started+failed (attempt 2), started+succeeded (attempt 3)
+	expectedEvents := 6
+	if len(events) != expectedEvents {
+		t.Fatalf("Expected %d events, got %d", expectedEvents, len(events))
+	}
+
+	// Check attempt numbers
+	for i, event := range events {
+		expectedAttempt := (i / 2) + 1 // Each pair of events (started, completed) belongs to one attempt
+		if event.Attempt != expectedAttempt {
+			t.Errorf("Event %d: expected Attempt=%d, got %d", i, expectedAttempt, event.Attempt)
+		}
+	}
+
+	// Verify event types
+	if events[0].Type != types.ToolEventStarted || events[1].Type != types.ToolEventFailed {
+		t.Error("First attempt should be started → failed")
+	}
+	if events[2].Type != types.ToolEventStarted || events[3].Type != types.ToolEventFailed {
+		t.Error("Second attempt should be started → failed")
+	}
+	if events[4].Type != types.ToolEventStarted || events[5].Type != types.ToolEventSucceeded {
+		t.Error("Third attempt should be started → succeeded")
+	}
+}
+
+

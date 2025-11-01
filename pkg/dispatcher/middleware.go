@@ -92,8 +92,11 @@ func RetryMiddleware(maxRetries int, retryDelay time.Duration) Middleware {
 		var lastErr error
 
 		for i := 0; i <= maxRetries; i++ {
+			// Set retry attempt in context for EventsMiddleware
+			ctxWithAttempt := context.WithValue(ctx, retryAttemptKey, i+1)
+
 			// Execute
-			result = next(ctx, toolUse)
+			result = next(ctxWithAttempt, toolUse)
 
 			// Success or non-retryable error
 			if !result.IsError || i == maxRetries {
