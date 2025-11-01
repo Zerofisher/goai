@@ -66,6 +66,8 @@ func convertMessages(messages []types.Message) []anthropicsdk.MessageParam {
 			result = append(result, convertUserMessage(msg))
 		case "assistant":
 			result = append(result, convertAssistantMessage(msg))
+		case "tool":
+			result = append(result, convertUserMessage(msg))
 		}
 	}
 
@@ -86,10 +88,19 @@ func convertUserMessage(msg types.Message) anthropicsdk.MessageParam {
 			})
 		case "tool_result":
 			if content.ToolResult != nil {
+				// Wrap tool result content as a TextBlockParam
+				toolResultContent := []anthropicsdk.ToolResultBlockParamContentUnion{
+					{
+						OfText: &anthropicsdk.TextBlockParam{
+							Text: content.ToolResult.Content,
+						},
+					},
+				}
+
 				contentBlocks = append(contentBlocks, anthropicsdk.ContentBlockParamUnion{
 					OfToolResult: &anthropicsdk.ToolResultBlockParam{
 						ToolUseID: content.ToolResult.ToolUseID,
-						Content:   []anthropicsdk.ToolResultBlockParamContentUnion{},
+						Content:   toolResultContent,
 						IsError:   anthropicsdk.Bool(content.ToolResult.IsError),
 					},
 				})

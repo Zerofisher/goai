@@ -1,0 +1,27 @@
+model:
+  provider: "anthropic"
+  api_key: "${ANTHROPIC_API_KEY}"
+  base_url: "http://localhost:4141"
+  name: "claude-haiku-4.5"
+  max_tokens: 32000
+  timeout: 60
+
+tools:
+  enabled:
+    - bash
+    - file
+    - edit
+    - search
+    - todo
+
+  bash:
+    timeout_ms: 30000
+    max_output_chars: 100000
+    forbidden_commands:
+      - "rm -rf /"
+      - "mkfs"
+
+output:
+  format: "markdown"
+  colors: true
+  show_spinner: true
