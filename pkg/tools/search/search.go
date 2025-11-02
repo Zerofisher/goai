@@ -129,14 +129,14 @@ func (t *SearchTool) Execute(ctx context.Context, input map[string]interface{}) 
 	// Perform search based on type
 	switch searchType {
 	case "code":
-		results, err := t.SearchCode(pattern, options)
+		results, err := t.SearchCode(ctx, pattern, options)
 		if err != nil {
 			return "", err
 		}
 		return t.formatCodeResults(results), nil
 
 	case "symbol":
-		locations, err := t.SearchSymbol(pattern)
+		locations, err := t.SearchSymbol(ctx, pattern)
 		if err != nil {
 			return "", err
 		}
@@ -185,7 +185,7 @@ func (t *SearchTool) Validate(input map[string]interface{}) error {
 }
 
 // SearchCode searches for code patterns using grep.
-func (t *SearchTool) SearchCode(pattern string, options SearchOptions) ([]Result, error) {
+func (t *SearchTool) SearchCode(ctx context.Context, pattern string, options SearchOptions) ([]Result, error) {
 	// Build grep command
 	args := []string{"-n", "-H"} // Line numbers and filenames
 
@@ -201,13 +201,18 @@ func (t *SearchTool) SearchCode(pattern string, options SearchOptions) ([]Result
 		args = append(args, fmt.Sprintf("-C%d", options.Context))
 	}
 
+	// Limit matches at grep level for efficiency
+	if options.MaxResults > 0 {
+		args = append(args, "-m", fmt.Sprintf("%d", options.MaxResults))
+	}
+
 	// Add pattern
 	args = append(args, pattern)
 
 	// Add file pattern if specified
 	if options.FilePattern != "" {
 		// Use find to get matching files first
-		files, err := t.findMatchingFiles(options.FilePattern)
+		files, err := t.findMatchingFiles(ctx, options.FilePattern)
 		if err != nil {
 			return nil, err
 		}
@@ -220,12 +225,21 @@ func (t *SearchTool) SearchCode(pattern string, options SearchOptions) ([]Result
 		args = append(args, "-r", t.workDir)
 	}
 
-	// Execute grep
-	cmd := exec.Command("grep", args...)
+	// Execute grep with context binding
+	cmd := exec.CommandContext(ctx, "grep", args...)
 	cmd.Dir = t.workDir
 
-	output, err := cmd.Output()
+	// Use a buffer with size limit to prevent excessive memory usage
+	var outBuf bytes.Buffer
+	const maxOutputSize = 10 * 1024 * 1024 // 10MB limit
+	cmd.Stdout = &limitedWriter{w: &outBuf, limit: maxOutputSize}
+
+	err := cmd.Run()
 	if err != nil {
+		// Check if context was canceled
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("search canceled: %w", ctx.Err())
+		}
 		// grep returns exit code 1 when no matches found
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			return []Result{}, nil
@@ -234,9 +248,9 @@ func (t *SearchTool) SearchCode(pattern string, options SearchOptions) ([]Result
 	}
 
 	// Parse results
-	results := t.parseGrepOutput(string(output))
+	results := t.parseGrepOutput(outBuf.String())
 
-	// Limit results
+	// Additional limit check (belt and suspenders)
 	if options.MaxResults > 0 && len(results) > options.MaxResults {
 		results = results[:options.MaxResults]
 	}
@@ -245,7 +259,7 @@ func (t *SearchTool) SearchCode(pattern string, options SearchOptions) ([]Result
 }
 
 // SearchSymbol searches for symbol definitions.
-func (t *SearchTool) SearchSymbol(symbol string) ([]Location, error) {
+func (t *SearchTool) SearchSymbol(ctx context.Context, symbol string) ([]Location, error) {
 	// For Go files, use simple grep patterns for common declarations
 	patterns := []string{
 		fmt.Sprintf(`func\s+%s\s*\(`, symbol),           // Function
@@ -257,11 +271,25 @@ func (t *SearchTool) SearchSymbol(symbol string) ([]Location, error) {
 	}
 
 	var locations []Location
+	const maxOutputSize = 5 * 1024 * 1024 // 5MB limit per pattern
 
 	for _, pattern := range patterns {
-		cmd := exec.Command("grep", "-rn", "-E", pattern, t.workDir, "--include=*.go")
-		output, err := cmd.Output()
+		// Check context before each pattern
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("search canceled: %w", ctx.Err())
+		}
+
+		cmd := exec.CommandContext(ctx, "grep", "-rn", "-E", "-m", "100", pattern, t.workDir, "--include=*.go")
+
+		var outBuf bytes.Buffer
+		cmd.Stdout = &limitedWriter{w: &outBuf, limit: maxOutputSize}
+
+		err := cmd.Run()
 		if err != nil {
+			// Check if context was canceled
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("search canceled: %w", ctx.Err())
+			}
 			// Continue if no matches for this pattern
 			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 				continue
@@ -269,7 +297,7 @@ func (t *SearchTool) SearchSymbol(symbol string) ([]Location, error) {
 			return nil, fmt.Errorf("grep failed: %w", err)
 		}
 
-		locs := t.parseSymbolOutput(string(output), symbol)
+		locs := t.parseSymbolOutput(outBuf.String(), symbol)
 		locations = append(locations, locs...)
 	}
 
@@ -320,21 +348,27 @@ func (t *SearchTool) buildOptions(input map[string]interface{}) SearchOptions {
 	return options
 }
 
-func (t *SearchTool) findMatchingFiles(pattern string) ([]string, error) {
-	matches, err := filepath.Glob(filepath.Join(t.workDir, pattern))
+func (t *SearchTool) findMatchingFiles(ctx context.Context, pattern string) ([]string, error) {
+	// Use find to locate files recursively. This provides a single source of truth
+	// and consistent behavior across platforms (within POSIX constraints).
+	cmd := exec.CommandContext(ctx, "find", t.workDir, "-name", pattern, "-type", "f")
+
+	var outBuf bytes.Buffer
+	const maxOutputSize = 2 * 1024 * 1024 // 2MB limit for file list
+	cmd.Stdout = &limitedWriter{w: &outBuf, limit: maxOutputSize}
+
+	err := cmd.Run()
 	if err != nil {
-		return nil, err
+		// Check if context was canceled
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("find canceled: %w", ctx.Err())
+		}
+		// No matches or find error: return empty slice to indicate no files
+		return []string{}, nil
 	}
 
-	// Also search in subdirectories
-	cmd := exec.Command("find", t.workDir, "-name", pattern, "-type", "f")
-	output, err := cmd.Output()
-	if err != nil {
-		// find might return error if no matches, that's ok
-		return matches, nil
-	}
-
-	scanner := bufio.NewScanner(bytes.NewReader(output))
+	var matches []string
+	scanner := bufio.NewScanner(&outBuf)
 	for scanner.Scan() {
 		file := scanner.Text()
 		if file != "" {
@@ -342,17 +376,7 @@ func (t *SearchTool) findMatchingFiles(pattern string) ([]string, error) {
 		}
 	}
 
-	// Remove duplicates
-	seen := make(map[string]bool)
-	var unique []string
-	for _, file := range matches {
-		if !seen[file] {
-			seen[file] = true
-			unique = append(unique, file)
-		}
-	}
-
-	return unique, nil
+	return matches, nil
 }
 
 func (t *SearchTool) parseGrepOutput(output string) []Result {
@@ -506,4 +530,32 @@ func getStringParam(input map[string]interface{}, key string) (string, error) {
 	}
 
 	return str, nil
+}
+
+// limitedWriter wraps an io.Writer with a maximum size limit
+type limitedWriter struct {
+	w       *bytes.Buffer
+	limit   int
+	written int
+}
+
+func (lw *limitedWriter) Write(p []byte) (n int, err error) {
+	if lw.written >= lw.limit {
+		return 0, fmt.Errorf("output size limit exceeded (%d bytes)", lw.limit)
+	}
+
+	remaining := lw.limit - lw.written
+	toWrite := len(p)
+	if toWrite > remaining {
+		toWrite = remaining
+	}
+
+	n, writeErr := lw.w.Write(p[:toWrite])
+	lw.written += n
+
+	if toWrite < len(p) {
+		return n, fmt.Errorf("output size limit exceeded (%d bytes)", lw.limit)
+	}
+
+	return n, writeErr
 }

@@ -115,9 +115,9 @@ func (r *ToolRegistry) Clear() {
 
 // BaseTool provides common functionality for tools
 type BaseTool struct {
-	name        string
-	description string
-	schema      map[string]interface{}
+    name        string
+    description string
+    schema      map[string]interface{}
 }
 
 // NewBaseTool creates a new base tool
@@ -141,7 +141,31 @@ func (t *BaseTool) Description() string {
 
 // InputSchema returns the tool's input schema
 func (t *BaseTool) InputSchema() map[string]interface{} {
-	return t.schema
+    return t.schema
+}
+
+// aliasTool wraps an existing Tool and exposes it under an alternate name.
+type aliasTool struct {
+    Tool
+    alias       string
+    description string
+}
+
+// WithAlias returns a Tool that delegates to the provided tool but reports the given alias name.
+// Description and schema are delegated to the original tool unless an explicit description is provided.
+func WithAlias(tool Tool, alias string) Tool {
+    return &aliasTool{Tool: tool, alias: alias}
+}
+
+// Name returns the alias name.
+func (a *aliasTool) Name() string { return a.alias }
+
+// Description returns the underlying description.
+func (a *aliasTool) Description() string {
+    if a.description != "" {
+        return a.description
+    }
+    return a.Tool.Description()
 }
 
 // Helper functions for building schemas

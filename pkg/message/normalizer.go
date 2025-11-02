@@ -1,3 +1,10 @@
+// Package message contains message types and utilities.
+//
+// Normalizer is a reserved utility for content normalization and cross-SDK
+// conversion. It is not currently wired into the agent pipeline and exists as
+// a future integration point (e.g., for provider-agnostic marshaling,
+// sanitization, and schema conformance). Keep usage minimal to avoid drift
+// until it is formally adopted.
 package message
 
 import (

@@ -112,12 +112,13 @@ func TestSearchTool(t *testing.T) {
 
 	// Test code search
 	t.Run("CodeSearch", func(t *testing.T) {
+		ctx := context.Background()
 		options := SearchOptions{
 			CaseSensitive: false,
 			MaxResults:    10,
 		}
 
-		results, err := searchTool.SearchCode("test", options)
+		results, err := searchTool.SearchCode(ctx, "test", options)
 		if err != nil {
 			t.Fatalf("SearchCode failed: %v", err)
 		}
@@ -139,7 +140,8 @@ func TestSearchTool(t *testing.T) {
 
 	// Test symbol search
 	t.Run("SymbolSearch", func(t *testing.T) {
-		locations, err := searchTool.SearchSymbol("TestFunction")
+		ctx := context.Background()
+		locations, err := searchTool.SearchSymbol(ctx, "TestFunction")
 		if err != nil {
 			t.Fatalf("SearchSymbol failed: %v", err)
 		}

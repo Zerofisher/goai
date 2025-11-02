@@ -71,6 +71,16 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 		promptManager: promptMgr,
 	}
 
+	// Set up dynamic tool list provider for prompt manager
+	promptMgr.SetToolListProvider(func() []string {
+		tools := agent.dispatcher.ListTools()
+		toolNames := make([]string, len(tools))
+		for i, tool := range tools {
+			toolNames[i] = tool.Name()
+		}
+		return toolNames
+	})
+
 	// Initialize system prompt
 	if err := agent.initializeSystemPrompt(); err != nil {
 		return nil, fmt.Errorf("failed to initialize system prompt: %w", err)
@@ -292,10 +302,16 @@ func (a *Agent) buildMessageRequest() llm.MessageRequest {
 	// Get tool definitions
 	tools := a.getToolDefinitions()
 
+	// Use configured max tokens with validation
+	maxTokens := a.config.Model.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = 4096 // Default fallback
+	}
+
 	return llm.MessageRequest{
 		Model:        a.config.Model.Name,
 		Messages:     a.messages.GetHistory(),
-		MaxTokens:    4096, // Response max tokens
+		MaxTokens:    maxTokens,
 		Temperature:  0.7,
 		Stream:       false,
 		Tools:        tools,

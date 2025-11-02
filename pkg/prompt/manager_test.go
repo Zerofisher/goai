@@ -602,3 +602,77 @@ func TestLoadPriority(t *testing.T) {
 		t.Errorf("result = %q, want 'From override' (override should have highest priority)", result)
 	}
 }
+
+// TestToolListProvider tests the dynamic tool list provider functionality.
+func TestToolListProvider(t *testing.T) {
+	tempDir := t.TempDir()
+	ctx := newMockContext(tempDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tempDir
+
+	manager := NewManager(cfg, ctx)
+
+	// Test 1: Without provider, should use fallback
+	// Set a template that uses the Tools variable
+	manager.base = "Available tools: {{ range .Tools }}{{ . }} {{ end }}"
+	result, err := manager.Compose()
+	if err != nil {
+		t.Fatalf("Compose() failed: %v", err)
+	}
+
+	// Check that fallback tools are present
+	expectedFallback := []string{"bash", "read_file", "write_file", "list_files", "edit_file", "search"}
+	for _, tool := range expectedFallback {
+		if !strings.Contains(result, tool) {
+			t.Errorf("Without provider: result missing tool %q", tool)
+		}
+	}
+
+	// Test 2: With provider, should use dynamic list
+	manager.SetToolListProvider(func() []string {
+		return []string{"bash", "file", "search", "edit", "todo"}
+	})
+
+	result, err = manager.Compose()
+	if err != nil {
+		t.Fatalf("Compose() with provider failed: %v", err)
+	}
+
+	expectedDynamic := []string{"bash", "file", "search", "edit", "todo"}
+	for _, tool := range expectedDynamic {
+		if !strings.Contains(result, tool) {
+			t.Errorf("With provider: result missing tool %q", tool)
+		}
+	}
+
+	// Should NOT contain tools from fallback that aren't in dynamic list
+	if strings.Contains(result, "read_file") {
+		t.Error("With provider: result should not contain 'read_file' (not in dynamic list)")
+	}
+	if strings.Contains(result, "list_files") {
+		t.Error("With provider: result should not contain 'list_files' (not in dynamic list)")
+	}
+
+	// Test 3: Provider returns latest list on each call
+	callCount := 0
+	manager.SetToolListProvider(func() []string {
+		callCount++
+		if callCount == 1 {
+			return []string{"tool1", "tool2"}
+		}
+		return []string{"tool1", "tool2", "tool3"}
+	})
+
+	result1, _ := manager.Compose()
+	if !strings.Contains(result1, "tool1") || !strings.Contains(result1, "tool2") {
+		t.Error("First call: result missing expected tools")
+	}
+	if strings.Contains(result1, "tool3") {
+		t.Error("First call: result should not contain 'tool3' yet")
+	}
+
+	result2, _ := manager.Compose()
+	if !strings.Contains(result2, "tool3") {
+		t.Error("Second call: result missing 'tool3'")
+	}
+}

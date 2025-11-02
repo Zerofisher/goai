@@ -1,13 +1,14 @@
 package openai
 
 import (
-	"encoding/json"
-	"fmt"
-	"time"
+    "encoding/json"
+    "fmt"
+    "time"
 
-	"github.com/Zerofisher/goai/pkg/llm"
-	"github.com/Zerofisher/goai/pkg/types"
-	openaisdk "github.com/openai/openai-go/v2"
+    "github.com/Zerofisher/goai/pkg/llm"
+    "github.com/Zerofisher/goai/pkg/types"
+    openaisdk "github.com/openai/openai-go/v2"
+    "github.com/openai/openai-go/v2/shared"
 )
 
 // convertToOpenAIParams converts llm.MessageRequest to OpenAI SDK parameters
@@ -41,14 +42,47 @@ func convertToOpenAIParams(req llm.MessageRequest, model string) openaisdk.ChatC
 		params.Seed = openaisdk.Int(int64(*req.Seed))
 	}
 
-	if len(req.StopSequences) > 0 {
-		// OpenAI supports up to 4 stop sequences
-		params.Stop = openaisdk.ChatCompletionNewParamsStopUnion{
-			OfStringArray: req.StopSequences,
-		}
-	}
+    if len(req.StopSequences) > 0 {
+        // OpenAI supports up to 4 stop sequences
+        params.Stop = openaisdk.ChatCompletionNewParamsStopUnion{
+            OfStringArray: req.StopSequences,
+        }
+    }
 
-	return params
+    if req.ResponseFormat != nil {
+        params.ResponseFormat = convertResponseFormat(req.ResponseFormat)
+    }
+
+    return params
+}
+
+// convertResponseFormat maps llm.ResponseFormat to OpenAI SDK union param
+func convertResponseFormat(rf *llm.ResponseFormat) openaisdk.ChatCompletionNewParamsResponseFormatUnion {
+    if rf == nil || rf.Type == "" {
+        // default to text
+        text := shared.NewResponseFormatTextParam()
+        return openaisdk.ChatCompletionNewParamsResponseFormatUnion{OfText: &text}
+    }
+
+    switch rf.Type {
+    case "json_object":
+        obj := shared.NewResponseFormatJSONObjectParam()
+        return openaisdk.ChatCompletionNewParamsResponseFormatUnion{OfJSONObject: &obj}
+    case "json_schema":
+        // Provide a default name if not supplied in schema
+        js := shared.ResponseFormatJSONSchemaParam{
+            JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
+                Name:   "response",
+                Schema: rf.JSONSchema,
+            },
+        }
+        return openaisdk.ChatCompletionNewParamsResponseFormatUnion{OfJSONSchema: &js}
+    case "text":
+        fallthrough
+    default:
+        text := shared.NewResponseFormatTextParam()
+        return openaisdk.ChatCompletionNewParamsResponseFormatUnion{OfText: &text}
+    }
 }
 
 // convertMessages converts []types.Message to OpenAI SDK message format
@@ -175,6 +209,9 @@ func convertToolChoice(choice *llm.ToolChoice) openaisdk.ChatCompletionToolChoic
 	// Default to auto
 	return openaisdk.ChatCompletionToolChoiceOptionUnionParam{}
 }
+
+// convertResponseFormat converts response format to OpenAI format
+//
 
 // convertFromOpenAIResponse converts OpenAI response to llm.MessageResponse
 func convertFromOpenAIResponse(completion *openaisdk.ChatCompletion) *llm.MessageResponse {

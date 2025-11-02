@@ -26,7 +26,7 @@ func NewTodoTool(manager *todo.Manager, reminder *reminder.System) *TodoTool {
 
 	return &TodoTool{
 		BaseTool: tools.NewBaseTool(
-			"TodoWrite",
+			"todo_write",
 			"Update the shared todo list with tasks and their statuses (pending | in_progress | completed)",
 			schema,
 		),

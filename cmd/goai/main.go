@@ -243,7 +243,8 @@ func registerTools(a *agent.Agent, cfg *config.Config) error {
 		if err := dispatcher.Register(todoToolInstance); err != nil {
 			return fmt.Errorf("failed to register todo tool: %w", err)
 		}
-		enabledTools = append(enabledTools, "todo")
+		// Note: Tool already uses "todo_write" as its name, no alias needed
+		enabledTools = append(enabledTools, "todo_write")
 	}
 
 	if len(enabledTools) > 0 {

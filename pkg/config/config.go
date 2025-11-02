@@ -27,7 +27,7 @@ type ModelConfig struct {
 	Name         string `yaml:"name" json:"name"`                   // Model name e.g., "gpt-4", "claude-3-opus"
 	APIKey       string `yaml:"api_key" json:"api_key"`             // API key (can use ${ENV_VAR} syntax)
 	BaseURL      string `yaml:"base_url" json:"base_url"`           // Optional custom base URL
-	MaxTokens    int    `yaml:"max_tokens" json:"max_tokens"`       // Maximum tokens for context
+	MaxTokens    int    `yaml:"max_tokens" json:"max_tokens"`       // Maximum tokens for LLM response
 	Timeout      int    `yaml:"timeout" json:"timeout"`             // Request timeout in seconds
 	SystemPrompt string `yaml:"system_prompt" json:"system_prompt"` // Optional system prompt override
 }

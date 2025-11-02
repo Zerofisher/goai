@@ -38,7 +38,7 @@ func NewClient(config llm.ClientConfig) (llm.Client, error) {
 
 	model := config.Model
 	if model == "" {
-		model = "gpt-4.1-mini"  // Default to gpt-4.1-mini
+		model = "gpt-4.1-mini" // Default to gpt-4.1-mini
 	}
 
 	return &Client{

@@ -20,8 +20,8 @@ func TestNewTodoTool(t *testing.T) {
 		t.Fatal("NewTodoTool returned nil")
 	}
 
-	if tool.Name() != "TodoWrite" {
-		t.Errorf("Expected name 'TodoWrite', got %s", tool.Name())
+	if tool.Name() != "todo_write" {
+		t.Errorf("Expected name 'todo_write', got %s", tool.Name())
 	}
 
 	if tool.Description() == "" {
@@ -466,8 +466,8 @@ func TestTodoTool_MarshalJSON(t *testing.T) {
 		t.Fatalf("Failed to unmarshal JSON: %v", err)
 	}
 
-	if result["name"] != "TodoWrite" {
-		t.Errorf("Expected name 'TodoWrite', got %v", result["name"])
+	if result["name"] != "todo_write" {
+		t.Errorf("Expected name 'todo_write', got %v", result["name"])
 	}
 
 	if result["description"] == nil || result["description"] == "" {

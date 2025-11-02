@@ -95,6 +95,43 @@ func (v *DefaultSecurityValidator) ValidatePath(path string) error {
 		return fmt.Errorf("invalid path: %w", err)
 	}
 
+	// Resolve symlinks in target path
+	// Walk up the directory tree to find the deepest existing directory
+	evalPath := absPath
+	pathToResolve := absPath
+	remaining := ""
+
+	// Find the deepest existing parent
+	for {
+		if _, err := os.Stat(pathToResolve); err == nil {
+			// This path exists, resolve it
+			if resolved, err := filepath.EvalSymlinks(pathToResolve); err == nil {
+				if remaining != "" {
+					evalPath = filepath.Join(resolved, remaining)
+				} else {
+					evalPath = resolved
+				}
+			}
+			break
+		}
+
+		// Path doesn't exist, go up one level
+		parent := filepath.Dir(pathToResolve)
+		if parent == pathToResolve {
+			// Reached root, use absPath as-is
+			evalPath = absPath
+			break
+		}
+
+		base := filepath.Base(pathToResolve)
+		if remaining != "" {
+			remaining = filepath.Join(base, remaining)
+		} else {
+			remaining = base
+		}
+		pathToResolve = parent
+	}
+
 	// Check forbidden paths
 	for _, forbidden := range v.forbiddenPaths {
 		// Expand ~ in forbidden path
@@ -104,9 +141,20 @@ func (v *DefaultSecurityValidator) ValidatePath(path string) error {
 			forbiddenPath = filepath.Join(homeDir, forbiddenPath[2:])
 		}
 
-		// Check if path matches or is under forbidden path
-		if absPath == forbiddenPath || strings.HasPrefix(absPath, forbiddenPath) {
-			return fmt.Errorf("access to path %s is forbidden", path)
+		// Resolve forbidden path
+		forbiddenAbs, err := filepath.Abs(forbiddenPath)
+		if err != nil {
+			continue
+		}
+		if resolved, err := filepath.EvalSymlinks(forbiddenAbs); err == nil {
+			forbiddenAbs = resolved
+		}
+
+		// Use Rel to check if target is under forbidden path
+		if rel, err := filepath.Rel(forbiddenAbs, evalPath); err == nil {
+			if !strings.HasPrefix(rel, "..") {
+				return fmt.Errorf("access to path %s is forbidden", path)
+			}
 		}
 	}
 
@@ -114,13 +162,22 @@ func (v *DefaultSecurityValidator) ValidatePath(path string) error {
 	if len(v.allowedDirs) > 0 {
 		allowed := false
 		for _, allowedDir := range v.allowedDirs {
+			// Resolve allowed directory
 			allowedAbs, err := filepath.Abs(allowedDir)
 			if err != nil {
 				continue
 			}
-			if strings.HasPrefix(absPath, allowedAbs) {
-				allowed = true
-				break
+			// Eval symlinks for allowed dir (tolerate non-existence)
+			if resolved, err := filepath.EvalSymlinks(allowedAbs); err == nil {
+				allowedAbs = resolved
+			}
+
+			// Use Rel to check containment
+			if rel, err := filepath.Rel(allowedAbs, evalPath); err == nil {
+				if !strings.HasPrefix(rel, "..") {
+					allowed = true
+					break
+				}
 			}
 		}
 		if !allowed {
@@ -133,44 +190,19 @@ func (v *DefaultSecurityValidator) ValidatePath(path string) error {
 			return fmt.Errorf("invalid work directory: %w", err)
 		}
 
-		// Resolve any symlinks in both paths to ensure correct comparison
-		workAbs, err = filepath.EvalSymlinks(workAbs)
-		if err != nil {
-			// If workDir doesn't exist yet, that's okay, just use the absolute path
-			workAbs, _ = filepath.Abs(v.workDir)
+		// Resolve symlinks in workDir (tolerate non-existence)
+		if resolved, err := filepath.EvalSymlinks(workAbs); err == nil {
+			workAbs = resolved
 		}
 
-		// For the target path, only evaluate symlinks if it exists
-		evalPath := absPath
-		if _, err := os.Stat(absPath); err == nil {
-			if evaluated, err := filepath.EvalSymlinks(absPath); err == nil {
-				evalPath = evaluated
-			}
-		}
-
-		// Check if path is within work directory
+		// Use Rel to check if path is within work directory
 		relPath, err := filepath.Rel(workAbs, evalPath)
 		if err != nil {
-			return fmt.Errorf("path %s is not within work directory", path)
+			return fmt.Errorf("path %s is outside work directory: %w", path, err)
 		}
-
-		// Check for path traversal attempts
-		// Only check if the path starts with ".." to escape the work directory
 		if strings.HasPrefix(relPath, "..") {
-			return fmt.Errorf("path traversal detected in %s", path)
+			return fmt.Errorf("path %s is outside work directory", path)
 		}
-	}
-
-	// Check for symbolic links that might escape
-	info, err := os.Lstat(absPath)
-	if err == nil && info.Mode()&os.ModeSymlink != 0 {
-		// Resolve the symlink
-		resolved, err := filepath.EvalSymlinks(absPath)
-		if err != nil {
-			return fmt.Errorf("cannot resolve symlink %s: %w", path, err)
-		}
-		// Recursively validate the resolved path
-		return v.ValidatePath(resolved)
 	}
 
 	return nil
@@ -232,11 +264,24 @@ func (v *DefaultSecurityValidator) CheckPermission(tool string, input map[string
 		return nil
 
 	case "file_read", "file_write", "edit":
+		// Backward-compatibility with old tool names (kept for safety)
 		if path, ok := input["path"].(string); ok {
 			return v.ValidatePath(path)
 		}
 		if filePath, ok := input["file_path"].(string); ok {
 			return v.ValidatePath(filePath)
+		}
+	case "read_file", "write_file", "edit_file":
+		if path, ok := input["path"].(string); ok {
+			return v.ValidatePath(path)
+		}
+		if filePath, ok := input["file_path"].(string); ok {
+			return v.ValidatePath(filePath)
+		}
+	case "list_files":
+		// Validate directory if provided
+		if dir, ok := input["dir"].(string); ok {
+			return v.ValidatePath(dir)
 		}
 
 	case "delete", "remove":
@@ -300,7 +345,10 @@ func containsShellInjection(cmd string) bool {
 	return false
 }
 
-// PathSanitizer provides path sanitization utilities
+// PathSanitizer provides path sanitization utilities.
+// NOTE: Prefer using DefaultSecurityValidator.ValidatePath for production code.
+// This helper is primarily retained for tests and backward compatibility and
+// may be removed in future versions.
 type PathSanitizer struct {
 	workDir string
 }

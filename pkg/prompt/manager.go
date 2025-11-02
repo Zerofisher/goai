@@ -25,6 +25,10 @@ type Context interface {
 	GetProjectGitBranch() string
 }
 
+// ToolListProvider is a function that returns the list of available tool names.
+// This allows the prompt manager to get dynamic tool lists without circular dependencies.
+type ToolListProvider func() []string
+
 // Manager manages system prompts with support for:
 // - Multiple sources (file, env, config, default)
 // - Template variable interpolation
@@ -45,6 +49,9 @@ type Manager struct {
 	// Configuration sources
 	cfg     *config.Config
 	context Context
+
+	// Tool list provider (optional, provides dynamic tool list)
+	toolListProvider ToolListProvider
 }
 
 // PromptConfig represents the YAML configuration for system prompts.
@@ -252,10 +259,17 @@ func (m *Manager) buildTemplateVars() map[string]any {
 		"Branch":   m.context.GetProjectGitBranch(),
 	}
 
-	// Tools information (TODO: integrate with dispatcher to get actual tool list)
-	vars["Tools"] = []string{
-		"bash", "read_file", "write_file", "list_files", "edit_file", "search",
+	// Tools information - use dynamic tool list if provider is set
+	var toolList []string
+	if m.toolListProvider != nil {
+		toolList = m.toolListProvider()
+	} else {
+		// Fallback to default tool list if no provider is set
+		toolList = []string{
+			"bash", "read_file", "write_file", "list_files", "edit_file", "search",
+		}
 	}
+	vars["Tools"] = toolList
 
 	// Policies/guidelines
 	vars["Policies"] = map[string]any{
@@ -285,6 +299,12 @@ func (m *Manager) Override(text string) {
 // ClearOverride removes the runtime override.
 func (m *Manager) ClearOverride() {
 	m.override = ""
+}
+
+// SetToolListProvider sets the function that provides the dynamic tool list.
+// This should be called after the dispatcher is initialized.
+func (m *Manager) SetToolListProvider(provider ToolListProvider) {
+	m.toolListProvider = provider
 }
 
 // UseProfile switches to a different profile (if YAML config supports multiple profiles).
